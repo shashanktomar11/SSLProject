@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+{% if user.is_authenticated %}
+  <h1>Welcome To SplitWise Clone designed by "The Marauders"</h1>
+  <br>
+  Hi {{ user.first_name }} {{ user.last_name}}!
+  <p><a href="{% url 'logout' %}">logout</a></p>
+  <p><a href="{% url 'password_change' %}">change password</a></p>
+  <p><a href="{% url 'add_post' %}">upload profile photo</a></p>
+{% else %}
+  <p>You are not logged in</p>
+  <a href="{% url 'login' %}">login</a> |
+  <a href="{% url 'signup' %}">signup</a>
+{% endif %}
+{% endblock %}
