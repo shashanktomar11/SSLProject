@@ -1,0 +1,22 @@
+{% if friends %}
+    <h1>Friends </h1>
+    <table>
+    	<tr>
+    		<th>Name</th>
+            <th>Status</th>
+    	</tr>
+    {% for f in friends %}
+    <tr>
+        <td><a href="/SSL/{{ f.friend.user_id }}/">{{ f.friend.user_id }}</a></td>
+        {% if f.friend.who_owes_who == 'They owe you' %}
+        <td><a href="/SSL/{{ question.id }}/"><font color="green">{{ f.money_owed }}</font></a></td>
+        {% else %}
+        <td><a href="/SSL/{{ question.id }}/"><font color="red">{{ f.money_owed }}</font></a></td>
+        {% endif %}
+    </tr>
+    {% endfor %}
+    </table>
+
+{% else %}
+    <p>No polls are available.</p>
+{% endif %}

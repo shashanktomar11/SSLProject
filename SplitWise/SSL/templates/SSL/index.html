@@ -1,0 +1,16 @@
+{% if latest_question_list %}
+    <table>
+    	<tr>
+    		<th>Name</th>
+    		<th>Money Owed</th>
+    	</tr>
+    {% for question in latest_question_list %}
+    <tr>
+        <td><a href="/SSL/{{ question.id }}/">{{ question.user_id }}</a></td>
+        <td><a href="/SSL/{{ question.id }}/">{{ question.money_owed }}</a></td>
+    </tr>
+    {% endfor %}
+    </table>
+{% else %}
+    <p>No polls are available.</p>
+{% endif %}
