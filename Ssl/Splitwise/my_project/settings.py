@@ -123,7 +123,7 @@ STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'splitwise/media')
 
-LOGIN_REDIRECT_URL = 'home'
+LOGIN_REDIRECT_URL = 'success'
 LOGOUT_REDIRECT_URL = 'home'
 
 AUTH_PROFILE_MODULE = 'splitwise.UserProfile'
