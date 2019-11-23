@@ -10,15 +10,15 @@ class Friend(models.Model):
 	money_owed = models.IntegerField(default = 0)
 
 	def __str__(self):
-		return self.person1.username + ' ' + self.person2.username
+		return self.person2.username
 
 class Group(models.Model):
 	group_name = models.CharField(max_length=30)
 	no_transactions = models.IntegerField(default=0)
-	members = models.ManyToManyField(Friend, through='Membership')
+	members = models.ManyToManyField(settings.AUTH_USER_MODEL, through='Membership')
 
 class Membership(models.Model):
-	friend = models.ForeignKey(Friend, on_delete = models.CASCADE)
+	friend = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete = models.CASCADE)
 	group = models.ForeignKey(Group, on_delete = models.CASCADE)
 	money_owed = models.IntegerField(default=0)
 
