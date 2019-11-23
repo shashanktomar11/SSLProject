@@ -15,10 +15,10 @@ class SignUp(generic.CreateView):
     success_url = reverse_lazy('login')
     template_name = 'signup.html'
 
-#class EditProfile(generic.CreateView):
-#	form_class = ProfileUpdateForm
-#	success_url = reverse_lazy('login')
-#	template_name = 'editprofile.html'
+class EditProfile(generic.CreateView):
+	form_class = ProfileUpdateForm
+	success_url = reverse_lazy('login')
+	template_name = 'editprofile.html'
 
 def edit_profile_view(request): 
   
