@@ -7,12 +7,13 @@ from django.urls import reverse_lazy
 from django.views import generic
 
 from splitwise.forms import CustomUserCreationForm#, EditProfileForm
-from splitwise.forms import ProfileUpdateForm
+from splitwise.forms import *
 
+from .models import *
 from django.template import loader
 
 from django.template import RequestContext
-
+from django.db.models import Q
 
 class SignUp(generic.CreateView):
     form_class = CustomUserCreationForm
@@ -38,11 +39,39 @@ class EditProfile(generic.CreateView):
   
   
 def success(request):
-	print("f")
+	me = User.objects.get(username=request.user.get_username())
+	usr = request.user.get_username()
+	friend_form = FriendForm()
+	if request.method == 'POST':
+		if 'friend' in request.POST:
+			friend_form = FriendForm(request.POST)
+			if friend_form.is_valid():
+				friend_id = friend_form.cleaned_data['your_name']
+				if User.objects.filter(username=friend_id).exists():
+					friend = User.objects.get(username=friend_id)
+					if friend == me:
+						print('F')
+					elif Friend.objects.filter(person1=me,person2=friend).exists() or Friend.objects.filter(person1=friend,person2=me).exists():
+						print("f")
+					else:
+						f = Friend(person1=me,person2=friend)
+						f1 = Friend(person1=friend,person2=me)
+
+						print('hi')
+						f.save()
+						f1.save()
+
+						print(f)
+	else:
+		friend_form=FriendForm()
 	x=''
+	friends = Friend.objects.filter(person1=me)
 	context = {
-		x:'x'
+		'friend_form' : friend_form,
+		'friends' : friends
 	}
+	
+
 	template = loader.get_template('home.html') 
 	#return render(request, 'home.html',
          #  context_instance=RequestContext(request))

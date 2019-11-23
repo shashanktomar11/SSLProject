@@ -18,6 +18,42 @@
   Profile Photo
   <img src="{{ user.profile.image.url }}" width="240">
   <p><a href="{% url 'logout' %}">logout</a></p>
+  <br>
+  <br>
+  <br>
+  <h2>Friends</h2>
+  <br>
+  <h4>Add Friends</h4>
+  <br>
+  <form action="/splitwise/success/" method="POST">
+        {% csrf_token %}
+        {{ friend_form }}
+        <input type="submit" value="Submit" name="friend">
+  </form>
+  <br>
+  <table>
+        <tr>
+            <th>Name</th>
+            <th>Status</th>
+        </tr>
+    {% for f in friends %}
+    <tr>
+        <td><a href="/splitwise/{{ f.person2 }}/">{{ f.person2 }}</a></td>
+        {% if f.money_owed >= 0 %}
+        <td><a href="/splitwise/{{ question.id }}/"><font color="green">{{ f.money_owed }}</font></a></td>
+        {% else %}
+        <td><a href="/splitwise/{{ question.id }}/"><font color="red">{{ f.money_owed }}</font></a></td>
+        {% endif %}
+    </tr>
+    {% endfor %}
+    </table>
+    <br>
+    <br>
+    <h2>Groups</h2>
+    <br>
+    <h4>Add Group</h4>
+    <br>
+    
 {% else %}
   <p>You are not logged in</p>
   <a href="{% url 'login' %}">login</a>

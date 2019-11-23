@@ -42,6 +42,9 @@ class ProfileUpdateForm(forms.ModelForm):
 
 		return user
 
+class FriendForm(forms.Form):
+	your_name = forms.CharField(label="Friend's username", max_length=100)
+
 #class EditProfileForm(forms.Form):
 	
 #	first_name = forms.CharField(required=True)
@@ -63,3 +66,5 @@ class ProfileUpdateForm(forms.ModelForm):
 #			user.save()
 
 #		return user
+
+
