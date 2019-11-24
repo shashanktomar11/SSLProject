@@ -46,7 +46,7 @@
         </tr>
     {% for f in friends %}
     <tr>
-        <td><a href="/splitwise/friend/{{ f.person2 }}/">{{ f.person2 }}</a></td>
+        <td><a href="/splitwise/friend/{{ f.person2.id }}/">{{ f.person2 }}</a></td>
         {% if f.money_owed >= 0 %}
         <td><font color="green">{{ f.money_owed }}</font></td>
         {% else %}
@@ -73,11 +73,11 @@
       </tr>
     {% for g in groups %}
     <tr>
-        <td><a href="/splitwise/group/{{ g.group }}/">{{ g.group }}</a></td>
+        <td><a href="/splitwise/group/{{ g.group.id }}/">{{ g.group }}</a></td>
         {% if g.money_owed >= 0 %}
         <td><font color = green>{{ g.money_owed }}</font></td>
         {% else %}
-        <td><font color = red>{{ g.money_owed }}</font></td>
+        <td><font color = red>{% widthratio g.money_owed 1 -1 %}</font></td>
         {% endif %}
         <td><form action="/SSL/" method="POST">
         {% csrf_token %}

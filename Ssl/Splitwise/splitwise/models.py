@@ -8,7 +8,7 @@ from datetime import datetime
 class Friend(models.Model):
 	person1 = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete = models.CASCADE, related_name='person1')
 	person2 = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete = models.CASCADE, related_name='person2')
-	money_owed = models.IntegerField(default = 0)
+	money_owed = models.DecimalField(decimal_places=2, max_digits=10, default = 0)
 
 	def __str__(self):
 		return self.person2.username
@@ -24,15 +24,21 @@ class Group(models.Model):
 class Membership(models.Model):
 	friend = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete = models.CASCADE)
 	group = models.ForeignKey(Group, on_delete = models.CASCADE)
-	money_owed = models.IntegerField(default=0)
+	money_owed = models.DecimalField(decimal_places=2, max_digits=10, default=0)
+
+	def __str__(self):
+		return self.friend.username + ' ' + self.group.group_name
 
 class Transaction(models.Model):
 	group = models.ForeignKey(Group, on_delete = models.CASCADE, null=True, blank=True)
 	group_transaction_id = models.IntegerField(default = 0)
 	lender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='lender')
 	borrower = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='borrower')
+	added_by = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE, related_name='added_by',null=True)
+	paid_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='paid_by',null=True)
 	description = models.CharField(max_length=30)
 	amount = models.DecimalField(default=0,decimal_places=2,max_digits=10)
+	no_transactions=0
 	MOVIES = 'mv'
 	FOOD = 'fd'
 	TRAVEL = 'tr'
@@ -40,6 +46,7 @@ class Transaction(models.Model):
 	MEDICAL = 'md'
 	SHOPPING = 'sp'
 	SERVICES = 'sv'
+	SETTLE = 'st'
 	OTHERS = 'ot'
 	TAG_CHOICES= [
         (MOVIES, 'Movies'),
@@ -49,6 +56,7 @@ class Transaction(models.Model):
 		(MEDICAL, 'Medical'),
 		(SHOPPING, 'Shopping'),
 		(SERVICES, 'Services'),
+		(SETTLE, 'Settle'),
 		(OTHERS, 'Others')
     ]
 	tag = models.CharField(
@@ -56,6 +64,8 @@ class Transaction(models.Model):
         choices=TAG_CHOICES
     )
 	date = models.DateTimeField(default=datetime.now)
+	def __str__(self):
+		return self.lender.username + ' lent ' + str(self.amount) + ' to ' + self.borrower.username 
 
 
 class Profile(models.Model):

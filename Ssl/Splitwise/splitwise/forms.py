@@ -98,7 +98,43 @@ class TransactionForm(forms.Form):
 	tag = forms.ChoiceField(choices=TAG_CHOICES)
 	
 	
-	
+class GroupTransactionForm(forms.Form):
+	description = forms.CharField(max_length=30)
+	who_paid = forms.MultipleChoiceField(choices=[])
+	amount = forms.DecimalField(decimal_places=2,max_digits=10)
+	CHOICES = [
+		('equal', 'Split Equally'),
+		('unequal', 'Split Unequally')
+	]
+	split = forms.ChoiceField(choices=CHOICES, widget=forms.RadioSelect)
+	def __init__(self, involved, *args, **kwargs):
+		super(GroupTransactionForm, self).__init__(*args, **kwargs)
+		self.fields['who_paid'] = forms.MultipleChoiceField(
+		choices=involved
+		)
+		for i in involved:
+			self.fields[i[0]+' (%)'] = forms.DecimalField(decimal_places=2,max_digits=10,required = False)
+	MOVIES = 'mv'
+	FOOD = 'fd'
+	TRAVEL = 'tr'
+	ELECTRONICS = 'ee'
+	MEDICAL = 'md'
+	SHOPPING = 'sp'
+	SERVICES = 'sv'
+	SETTLE = 'st'
+	OTHERS = 'ot'
+	TAG_CHOICES= [
+        (MOVIES, 'Movies'),
+		(FOOD, 'Food'),
+		(TRAVEL, 'Travel'),
+		(ELECTRONICS, 'Electronics'),
+		(MEDICAL, 'Medical'),
+		(SHOPPING, 'Shopping'),
+		(SERVICES, 'Services'),
+		(SETTLE, 'Settle'),
+		(OTHERS, 'Others')
+	]
+	tag = forms.ChoiceField(choices=TAG_CHOICES)
 	
 			
 
