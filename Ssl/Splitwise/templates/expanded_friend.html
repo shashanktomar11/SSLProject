@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+	<h1>{{ a }}</h1>
+
+    {% if z >= 0 %}
+    	{{ a }} owes you {{ z }} outside group
+    	{% else %}
+    	You owe {{ a }} {% widthratio z 1 -1 %} outside group
+    	{% endif %}
+{% endblock %}

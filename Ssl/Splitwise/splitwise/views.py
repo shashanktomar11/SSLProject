@@ -83,7 +83,7 @@ def success(request):
 						f1.save()
 				return HttpResponseRedirect("/splitwise/success/")
 
-						print(f)
+						
 		if 'group' in request.POST:
 			
 			group_form = GroupForm(final_choices, request.POST)
@@ -92,6 +92,8 @@ def success(request):
 				people = group_form.cleaned_data['friends']
 				g = Group(group_name=name)
 				g.save()
+				m = Membership(friend = me, group =g)
+				m.save()
 				for p in people:
 					member = User.objects.get(username=p)
 					m = Membership(friend = member, group = g)
@@ -103,12 +105,37 @@ def success(request):
 		group_form=GroupForm(final_choices)
 		#group_form.fields['friends'].choices=[]
 	
-	friends = Friend.objects.values_list('person1')
+	friends = Friend.objects.filter(person1=me)
+	groups = Membership.objects.filter(friend=me)
+	print(groups)
+
+	edit_profile_form = ProfileUpdateForm()
+	if request.method == 'POST':
+		if 'edit_profile' in request.POST:
+			print(request.user.profile.bio)
+			edit_profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
+			if edit_profile_form.is_valid():
+				#edit_profile_form.save()
+				#bio = edit_profile_form.cleaned_data['bio']
+				#print(bio)
+				#image = edit_profile_form.cleaned_data['image']
+				#print(request.FILES['image'])
+				#z = Profile.objects.get(user = me)
+				#z.bio = bio
+				#z.image = "profile_image/"+str(request.FILES['image'])
+				#print(Profile.objects.get(user = me).image)
+				#z.save()
+				edit_profile_form.save()
+				#print(bio)
+	else:
+		edit_profile_form=ProfileUpdateForm()
 	
 	context = {
 		'friend_form' : friend_form,
 		'group_form' : group_form,
-		'friends' : friends
+		'friends' : friends,
+		'groups' : groups,
+		'edit_profile_form' : edit_profile_form
 	}
 	
 
@@ -117,6 +144,106 @@ def success(request):
          #  context_instance=RequestContext(request))
 	return HttpResponse(template.render(context, request))
 
-#def x(request):
-#	print("f")
-#	return HttpResponse('')
+def friend(request,f):
+	me = request.user
+	x = Friend.objects.filter(person1__username=me)
+
+	z=0
+	a=''
+	for y in x:
+		if(y.person2.username==f):
+			z = y.money_owed
+			a = str(y.person2)
+
+	template = loader.get_template('expanded_friend.html')
+	context = {
+		'z' : z,
+		'a' : a
+	}
+	return HttpResponse(template.render(context, request))
+
+def group(request,g):
+	me=request.user
+	template = loader.get_template('expanded_group.html')
+	x = ''
+	context = {
+		'x' : x
+	}
+	return HttpResponse(template.render(context, request))
+
+def transaction(request):
+	me = request.user
+	xyz=Friend.objects.filter(person1=me)
+	#print(xyz)
+	final_choices=()
+	for e in xyz:
+		#print(str(e.person2))
+		thistuple = (str(e.person2), str(e.person2))
+		#print(thistuple)
+		final_choices = final_choices + (thistuple,)
+	involved_form = InvolvedForm(final_choices)
+	if request.method=='POST':
+		if 'involved' in request.POST:
+			involved_form=InvolvedForm(final_choices, request.POST)
+			if involved_form.is_valid():
+				people = involved_form.cleaned_data['friends']
+				for p in people:
+					print(p)
+				request.session['people'] = people
+				request.session['choices'] = final_choices
+				return HttpResponseRedirect('/splitwise/transaction/form/')
+	else:
+		involved_form=InvolvedForm(final_choices)
+	template = loader.get_template('transaction.html')
+	x=''
+	context = {
+		'involved_form':involved_form
+	}
+	return HttpResponse(template.render(context, request))
+
+def transaction_form(request):
+	me = request.user
+	people = request.session.get('people')
+	final_choices = ()
+	final_choices = final_choices + ((me.username,me.username),)
+	for p in people:
+		thistuple = (str(p),str(p))
+		final_choices = final_choices + (thistuple,)
+	choices = request.session.get('choices')
+	template = loader.get_template('transaction_form.html')
+	transaction_form = TransactionForm(final_choices)
+	if request.method == 'POST':
+		if 'transaction' in request.POST:
+			transaction_form=TransactionForm(final_choices, request.POST)
+			if transaction_form.is_valid():
+				desc = transaction_form.cleaned_data['description']
+				who_paid = transaction_form.cleaned_data['who_paid']
+				print(who_paid)
+				amt = transaction_form.cleaned_data['amount']
+				split = transaction_form.cleaned_data['split']
+				print(split)
+				tag = transaction_form.cleaned_data['tag']
+				shares = []
+				for i in final_choices:
+					data = transaction_form.cleaned_data[i[0]+' (%)']
+					mytuple = (str(i[0]),data)
+					shares.append(mytuple)
+				payer = User.objects.get(username=who_paid[0])
+				print(payer)
+				if split == 'equal':
+					for p in final_choices:
+						print(p[0])
+						user = User.objects.get(username=p[0])
+
+				else:
+					for p in final_choices:
+						print(p[0])
+
+				return HttpResponseRedirect('/splitwise/transaction/form/')
+	else:
+		transaction_form = TransactionForm(final_choices)
+
+	context ={
+		'transaction_form' : transaction_form
+	}
+	return HttpResponse(template.render(context,request))
