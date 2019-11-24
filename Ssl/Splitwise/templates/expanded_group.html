@@ -4,8 +4,9 @@
 
 {% block content %}
 	<h1>Group</h1>
-	<form action="/splitwise/friend/{{ friend.id }}/" method="POST">
+	<form action="/splitwise/group/{{ g }}/" method="POST">
         {% csrf_token %}
+        {{ change_form }}
         <input type="submit" value="Settle Up" name= "settle_up">
     </form>
     <form action="/splitwise/balances/" method="POST">

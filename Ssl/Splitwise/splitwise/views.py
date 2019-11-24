@@ -108,11 +108,19 @@ def success(request):
 		#group_form.fields['friends'].choices=[]
 	
 	friends = Friend.objects.filter(person1=me)
+	friends_boolean=[]
+	for y in friends:
+		if(y.money_owed<0):
+			y.money_owed = (-1)*(y.money_owed)
+			friends_boolean.append(0)
+		else:
+			friends_boolean.append(1)
+	friends_list = zip(friends,friends_boolean)
 	groups = Membership.objects.filter(friend=me)
 	print(groups)
 
 	edit_profile_form = ProfileUpdateForm()
-	'''if request.method == 'POST':
+	if request.method == 'POST':
 		if 'edit_profile' in request.POST:
 			print(request.user.profile.bio)
 			edit_profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
@@ -130,7 +138,7 @@ def success(request):
 				edit_profile_form.save()
 				#print(bio)
 	else:
-		edit_profile_form=ProfileUpdateForm()'''
+		edit_profile_form=ProfileUpdateForm()
 	
 	context = {
 		'friend_form' : friend_form,
@@ -271,7 +279,12 @@ def group(request,g):
 	group = Group.objects.get(id=g)
 	all_transactions = Transaction.objects.filter(group=g).order_by('date')
 	no =group.no_transactions
-
+	ms = Membership.objects.filter(group=g)
+	frnd_list=()
+	for m in ms:
+		if m.friend != me:
+			frnd_list = frnd_list + ((m.friend.username, m.friend.username),)
+	print(frnd_list)
 	template = loader.get_template('expanded_group.html')
 	x = ''
 	trans_list=[]
@@ -294,14 +307,139 @@ def group(request,g):
 			lst = (date,paid_by,tag1,desc,shares_list,paid_amt)
 			trans_list.append(lst)
 
+	change_form = ChangeForm(frnd_list)
 	if request.method == 'POST':
 		if 'balances' in request.POST:
 			print('hi')
+		if 'settle_up' in request.POST:
+			change_form = ChangeForm(frnd_list,request.POST)
+			if change_form.is_valid():
+				print('hi')
+	else: 
+		change_form=ChangeForm(frnd_list)
 	context = {
-		'trans_list':trans_list
+		'trans_list':trans_list,
+		'g':g,
+		'change_form':change_form
 	}
 	
 	return HttpResponse(template.render(context, request))
+
+def activity_tab(request):
+	me=request.user	
+	template = loader.get_template('activity_tab.html')
+	x = Transaction.objects.filter(Q(lender=me) | Q(borrower=me)).order_by('-date')
+	a = 0
+	print(len(x))
+	i=0
+	desc=[]
+	money=[]
+	additional_info=[]
+	transactions=[]
+	no_of_activities=0
+	exit=False
+	while(i < len(x)):
+		#print(x[i])
+		if(x[i].lender==me and x[i].borrower==me):
+			i = i+1
+			pass
+		else:
+			if(x[i].lender==me):
+				money.append(x[i].amount)
+			else:
+				money.append((-1)*x[i].amount)
+
+			desc.append(x[i].description)
+			transactions.append(x[i])
+			if(x[i].group_id is None):
+				additional_info.append("group does not exist xxxxxxwkebjkerjbkjengksdbkejbg")
+			else:
+				additional_info.append(x[i].group.group_name)
+			j=i+1
+			if(j>=len(x)):
+				break
+				#print(j)
+			while(x[j].group_id == x[i].group_id and x[j].group_transaction_id == x[i].group_transaction_id):
+				if( j < len(x)):
+					if(x[j].lender==me and x[j].borrower==me):
+						j = j+1
+						pass
+					else:
+						if(x[j].lender==me):
+							money[no_of_activities]+=x[j].amount
+						else:
+							money[no_of_activities]-=x[j].amount
+						j=j+1
+				else:
+					exit=True
+					break
+			i=j
+			no_of_activities = no_of_activities + 1
+			if(exit == True):
+				break
+	#for i in range(len(desc)):
+		#print(str(desc[i])+" "+str(money[i]))
+		#print(x.transaction
+	#send_list = [desc, money]#, additional_info]
+	send_list = zip(money,desc,additional_info,transactions)
+	#print(send_list)
+	context = {
+		'send_list' : send_list
+	}		
+	return HttpResponse(template.render(context, request))
+
+def detailed_activity1(request, i):
+	y = Transaction.objects.filter(group=None, group_transaction_id=i)
+	#print(y)
+	person = []
+	share = []
+	payer = ''
+	total_amount=0;
+	if(len(y) == 1):
+		payer = y[0].lender.username
+		total_amount = y[0].amount
+		person.append(y[0].borrower.username)
+		share.append(total_amount)
+	else:
+		for z in y:
+			person.append(z.borrower.username)
+			share.append(z.amount)
+			total_amount = total_amount + z.amount
+			if(z.lender.username == z.borrower.username):
+				payer = z.lender.username
+	lst = zip(person,share)
+	context = {
+		'lst' : lst,
+		'payer' : payer,
+		'total_amount' : total_amount
+	}
+	template = loader.get_template('expanded_activity.html')
+	return HttpResponse(template.render(context, request))
+	#return HttpResponse('success')
+
+def detailed_activity2(request, i, j):
+	x = Group.objects.filter(id=i)
+	y = Transaction.objects.filter(group=x[0], group_transaction_id=j)
+	#print(y)
+	person = []
+	share = []
+	payer = ''
+	total_amount=0;
+	for z in y:
+		person.append(z.borrower.username)
+		share.append(z.amount)
+		total_amount = total_amount + z.amount
+		if(z.lender.username == z.borrower.username):
+			payer = z.lender.username
+	lst = zip(person,share)
+	context = {
+		'lst' : lst,
+		'payer' : payer,
+		'total_amount' : total_amount
+	}
+	template = loader.get_template('expanded_activity.html')
+	return HttpResponse(template.render(context, request))
+
 
 def transaction(request):
 	me = request.user

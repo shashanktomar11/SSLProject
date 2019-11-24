@@ -61,6 +61,15 @@ class InvolvedForm(forms.Form):
 		choices=user
 		)
 
+class ChangeForm(forms.Form):
+	friends = forms.MultipleChoiceField(choices=[])
+
+	def __init__(self, user, *args, **kwargs):
+		super(ChangeForm, self).__init__(*args, **kwargs)
+		self.fields['friends'] = forms.MultipleChoiceField(
+		choices=user
+		)
+
 class TransactionForm(forms.Form):
 	description = forms.CharField(max_length=30)
 	who_paid = forms.MultipleChoiceField(choices=[])
