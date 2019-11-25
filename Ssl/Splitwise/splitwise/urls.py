@@ -20,7 +20,7 @@ urlpatterns = [
     path('groups/transaction/',views.group_transaction, name='group_transaction'),
     path('insights/', views.Insights, name='Insights'),
     path('favicon.ico', RedirectView.as_view(url=staticfiles_storage.url('images/favicon.ico'))),
-
+    #path(r'^export/xls/$', views)
     #path('login/', views.login, name='login'),
     path('friend/<str:f>/', views.friend, name='friend'),
     path('group/<str:g>/', views.group, name='group'),

@@ -1,6 +1,9 @@
 from django.shortcuts import render, redirect, HttpResponse
 
 # Create your views here.
+import sys
+import pdfkit 
+import os
 from ipywidgets import widgets
 from datetime import datetime,date
 import openpyxl
@@ -14,7 +17,10 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 import plotly.express as px
-
+from openpyxl import load_workbook
+from PyPDF2 import PdfFileReader,PdfFileMerger
+from PyPDF2 import PdfFileWriter 
+import fpdf
 
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse_lazy
@@ -803,7 +809,8 @@ def balances(request):
 def Insights(request):
 	me = request.user
 	name=me.username
-	s="Transactions_"+name+".xlsx"
+	m="Transactions_"+name
+	s=m+".xlsx"
 	#me.username
 	#q1 = Transaction.objects.all()
 	# print("g \n")
@@ -813,6 +820,7 @@ def Insights(request):
 	# print(me)
 	query_set = Transaction.objects.filter(Q(lender=me)|Q(borrower=me),date__range=(start_date, end_date)) # Poll.objects.get(Q(question__startswith='Who'),Q(pub_date=date(2005, 5, 2)) | Q(pub_date=date(2005, 5, 6)))
 	# print(query_set)
+	datam=""
 	wb = openpyxl.Workbook()
 	sheet = wb.active
 	sheet.title = "Transaction History"
@@ -835,6 +843,19 @@ def Insights(request):
 	sheet.cell(row=1, column=4).value = "Amount"
 	sheet.cell(row=1, column=5).value = "Type of Expense"
 	sheet.cell(row=1, column=6).value = "Date and Time of Transaction"
+	datam+="Lender"
+	datam+="        "
+	datam+="Borrower"
+	datam+="        "
+	datam+="Group"
+	datam+="        "
+	datam+="Amount"
+	datam+="        "
+	datam+="Type of Expense"
+	datam+="        "
+	datam+="Date and Time of Transaction"
+	datam+="        "
+
 	dict0={'mv': "Movies",
 	'fd': "Food",
 	'tr': "Travel",
@@ -845,6 +866,7 @@ def Insights(request):
 	'ot': "Others"}
 	rowNum=2
 	for record in query_set:
+		datam+="\n"
 		if(record.group is None):
 			#colNum=2
 			#for colNum in range(1, 7):
@@ -854,6 +876,19 @@ def Insights(request):
 			sheet.cell(row=rowNum, column=4).value = str(record.amount)
 			sheet.cell(row=rowNum, column=5).value = dict0[record.tag]
 			sheet.cell(row=rowNum, column=6).value = str(record.date)
+			datam+=record.lender.username
+			datam+="        "
+			datam+=record.borrower.username
+			datam+="        "
+			datam+="N/A"
+			datam+="        "
+			datam+=str(record.amount)
+			datam+="        "
+			datam+=dict0[record.tag]
+			datam+="        "
+			datam+=str(record.date)
+			datam+="        "
+
 			#print(record.lender.username+" "+record.borrower.username+" "+str(record.amount)+" "+record.tag+" "+str(record.date))
 			rowNum=rowNum+1
 
@@ -865,22 +900,26 @@ def Insights(request):
 			sheet.cell(row=rowNum, column=5).value = dict0[record.tag]
 			sheet.cell(row=rowNum, column=6).value = str(record.date)
 			#print(record.lender.username+" "+record.borrower.username+" "+str(record.amount)+" "+record.tag+" "+str(record.date))
+			datam+=record.lender.username
+			datam+="        "
+			datam+=record.borrower.username
+			datam+="        "
+			datam+=record.group.group_name
+			datam+="        "
+			datam+=str(record.amount)
+			datam+="        "
+			datam+=dict0[record.tag]
+			datam+="        "
+			datam+=str(record.date)
+			datam+="        "
 			rowNum=rowNum+1
 
 	wb.save(s)
-		# plot_div = plot([Scatter(x=x_data, y=y_data,
- #                        mode='lines', name='test',
- #                        opacity=0.8, marker_color='green')],
- #               output_type='div')
-	# fig = make_subplots(rows=2, cols=2,subplot_titles=("Plot 1", "Plot 2", "Plot 3", "Plot 4"), )
-	# fig.add_trace(go.Figure(data=go.Bar(y=[2, 3, 1])))
-	# 	#fig.write_html('first_figure.html', auto_open=True)
-	# 	#plot_div = plot(fig, output_type='div')
-	# labels = ['Oxygen','Hydrogen','Carbon_Dioxide','Nitrogen']
-	# values = [4500, 2500, 1053, 500]
-	# fig.add_trace(go.Figure(data=[go.Pie(labels=labels, values=values)]))
-	# fig.add_trace(go.Figure(data=[go.Pie(labels=labels, values=values)]))
-	# fig.add_trace(go.Figure(data=[go.Pie(labels=labels, values=values)]))
+	pdf = fpdf.FPDF(format='letter')
+	pdf.add_page()
+	pdf.set_font("Arial", size=12)
+	pdf.write(5,str(datam))
+	pdf.output("transact_"+name+".pdf")
 
 	v=np.zeros((5,9))
 	dict2={'mv': 1,
@@ -1048,6 +1087,7 @@ def Insights(request):
 	#               row=2, col=2)
 
 	fig.update_layout(height=700, title_text="Insights")
+	fig.write_image("fig"+name+".pdf")
 	plot_div = plot(fig, output_type='div',include_plotlyjs=False, show_link=False, link_text="")
 
 	fig1 = go.Figure()
@@ -1068,6 +1108,7 @@ def Insights(request):
 	#fig = go.Figure(data=[go.Scatter(x=x, y=[1, 3, 6])])
 # Use datetime objects to set xaxis range datetime.combine(date.today(), datetime.min.time())
 	fig1.update_layout(xaxis_range=[datetime.combine(start_date, datetime.min.time()),datetime.combine(end_date, datetime.min.time())],title_text="Expenditure vs Time")
+	fig1.write_image("fig1"+name+".pdf")
 	plot_div2 = plot(fig1, output_type='div',include_plotlyjs=False, show_link=False, link_text="")
 	# animals=['giraffes', 'orangutans', 'monkeys']
 	# fig2 = go.Figure(data=[go.Bar(name='SF Zoo', x=animals, y=[20, 14, 23]),go.Bar(name='LA Zoo', x=animals, y=[12, 18, 29])
@@ -1079,6 +1120,7 @@ def Insights(request):
 	for k in dict4.keys():
 		fig2.add_trace(go.Bar(x=list(dict4[k].keys()), y=list(dict4[k].values()), name=dict5[k]))
 	fig2.update_layout(barmode='stack',title_text="Group Expenditures vs Friends")
+	fig2.write_image("fig2"+name+".pdf")
 	plot_div3 = plot(fig2, output_type='div',include_plotlyjs=False, show_link=False, link_text="")
 
 
@@ -1130,9 +1172,67 @@ def Insights(request):
 
 
 	fig3.update_layout(height=700,xaxis_range=[datetime.combine(start_date, datetime.min.time()).date(),datetime.combine(end_date, datetime.min.time()).date()],title_text="Number of Transactions vs Friends vs Time")
+	fig3.write_image("fig3"+name+".pdf")
 	plot_div4 = plot(fig3, output_type='div',include_plotlyjs=False, show_link=False, link_text="")
 
+	# h=m+".pdf"
+	# pw = PDFWriter(h)
+	# pw.setFont('Courier', 12)
+	# pw.setHeader('XLSXtoPDF.py - convert XLSX data to PDF')
+	# pw.setFooter('Generated using openpyxl and xtopdf')
 
+	# ws_range = worksheet.iter_rows('A1:H13')
+	# for row in ws_range:
+	# 	st = ''
+	# for cell in row:
+	# 	if cell.value is None:
+	# 		st += ' ' * 11
+	# 	else:
+	# 		st += str(cell.value).rjust(10) + ' '
+	# 	pw.writeLine(st)
+	# pw.savePage()
+	# pw.close()
+	# strc=str(me)
+	# strf="out_"+strc+".pdf"
+	# stri="al"
+	# stri=stri+strf
+	# r=str(stri)
+	# file_path = os.path.join(settings.BASE_DIR, "templates/insights.html")
+	# pdfkit.from_file(file_path, str(stri)) 
+	pdfs = ['front.pdf', 'transact_'+name+'.pdf',"fig"+name+".pdf", "fig1"+name+".pdf", "fig2"+name+".pdf","fig3"+name+".pdf"]
+
+	merger = PdfFileMerger( strict=False)
+
+	for pdf in pdfs:
+		merger.append(pdf)
+
+	merger.write("Transactions_"+name+".pdf")
+	merger.close()
+
+	if request.method == 'POST':
+		if 'downloadx' in request.POST:
+			# print('excel')
+			m="Transactions_"+name
+			s=m+".xlsx"
+			file_path = os.path.join(settings.BASE_DIR, s)
+			if os.path.exists(file_path):
+				with open(file_path, 'rb') as fh:
+					response = HttpResponse(fh.read(), content_type="application/vnd.ms-excel")
+					response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+					return response
+			raise Http404
+
+		if 'downloadpdf' in request.POST:
+			print('pdf')
+			m="Transactions_"+name
+			h=m+".pdf"
+			file_path = os.path.join(settings.BASE_DIR, h)
+			if os.path.exists(file_path):
+				with open(file_path, 'rb') as fh:
+					response = HttpResponse(fh.read(), content_type="application/pdf'")
+					response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+					return response
+			raise Http404
 
 
 	#CHANGE
@@ -1149,3 +1249,15 @@ def Insights(request):
 	# return HttpResponse('success')
 	return render(request, "insights.html", context={'plot_div1': plot_div, 'plot_div2':plot_div2, 'plot_div3':plot_div3, 'plot_div4':plot_div4})
 
+# def download(request, path):
+# 	me = request.user
+# 	name=me.username
+# 	m="Transactions_"+name
+# 	s=m+".xlsx"
+# 	file_path = os.path.join(settings.BASE_DIR, s)
+# 	if os.path.exists(file_path):
+# 		with open(file_path, 'rb') as fh:
+# 			response = HttpResponse(fh.read(), content_type="application/vnd.ms-excel")
+# 			response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+# 			return response
+# 	raise Http404

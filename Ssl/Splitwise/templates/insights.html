@@ -10,6 +10,14 @@
  
 </head>
 <body>
+  <form action="/splitwise/insights/" method="POST">
+        {% csrf_token %}
+        <input type="submit" value="Download Excel" name= "downloadx">
+    </form>
+     <form action="/splitwise/insights/" method="POST">
+        {% csrf_token %}
+        <input type="submit" value="Download PDF" name= "downloadpdf">
+    </form>
   {% autoescape off %}
   {{ plot_div1 }}
   {{ plot_div2 }}
