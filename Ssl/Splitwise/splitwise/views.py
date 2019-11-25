@@ -1,6 +1,62 @@
 from django.shortcuts import render, redirect, HttpResponse
 
 # Create your views here.
+import sys
+import pdfkit 
+import os
+from ipywidgets import widgets
+from datetime import datetime,date
+import openpyxl
+from openpyxl.styles import Font
+from openpyxl.styles import colors
+import plotly.graph_objects as go
+from django.shortcuts import render
+from plotly.offline import plot
+from plotly.subplots import make_subplots
+import numpy as np
+import pandas as pd
+import scipy as sp
+import plotly.express as px
+from openpyxl import load_workbook
+from PyPDF2 import PdfFileReader,PdfFileMerger
+from PyPDF2 import PdfFileWriter 
+import fpdf
+
+from django.contrib.auth.forms import UserCreationForm
+from django.urls import reverse_lazy
+from django.views import generic
+from django.http import HttpResponse, HttpResponseRedirect
+from splitwise.forms import CustomUserCreationForm
+from splitwise.forms import *
+
+from .models import *
+from django.template import loader
+
+from django.template import RequestContext
+from django.db.models import Q
+from django.shortcuts import render, redirect, HttpResponse
+
+# Create your views here.
+import sys
+import pdfkit 
+import os
+from ipywidgets import widgets
+from datetime import datetime,date
+import openpyxl
+from openpyxl.styles import Font
+from openpyxl.styles import colors
+import plotly.graph_objects as go
+from django.shortcuts import render
+from plotly.offline import plot
+from plotly.subplots import make_subplots
+import numpy as np
+import pandas as pd
+import scipy as sp
+import plotly.express as px
+from openpyxl import load_workbook
+from PyPDF2 import PdfFileReader,PdfFileMerger
+from PyPDF2 import PdfFileWriter 
+import fpdf
 
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse_lazy
@@ -848,6 +904,7 @@ def balances(request):
 	}
 	return(HttpResponse(template.render(context,request)))
 
+
 def notification(request):
 	me = request.user
 	sent_messages = Message.objects.filter(person1=me).order_by('date')
@@ -859,3 +916,458 @@ def notification(request):
 	template = loader.get_template('notification.html')
 	return(HttpResponse(template.render(context,request)))
 
+def Insights(request):
+	me = request.user
+	name=me.username
+	m="Transactions_"+name
+	s=m+".xlsx"
+	#me.username
+	#q1 = Transaction.objects.all()
+	# print("g \n")
+	#print(q1)
+	start_date=date(2019, 11, 11)
+	end_date=date(2019, 11, 29)
+	# print(me)
+	query_set = Transaction.objects.filter(Q(lender=me)|Q(borrower=me),date__range=(start_date, end_date)) # Poll.objects.get(Q(question__startswith='Who'),Q(pub_date=date(2005, 5, 2)) | Q(pub_date=date(2005, 5, 6)))
+	# print(query_set)
+	datam=""
+	wb = openpyxl.Workbook()
+	sheet = wb.active
+	sheet.title = "Transaction History"
+	fontObj1 = Font(name='Times New Roman', bold=True,color=colors.RED)
+	sheet['A1'].font = fontObj1
+	sheet['B1'].font = fontObj1
+	sheet['C1'].font = fontObj1
+	sheet['D1'].font = fontObj1
+	sheet['E1'].font = fontObj1
+	sheet['F1'].font = fontObj1
+	sheet.column_dimensions['A'].width = 20
+	sheet.column_dimensions['B'].width = 20
+	sheet.column_dimensions['C'].width = 20
+	sheet.column_dimensions['D'].width = 20
+	sheet.column_dimensions['E'].width = 20
+	sheet.column_dimensions['F'].width = 30
+	sheet.cell(row=1, column=1).value = "Lender"
+	sheet.cell(row=1, column=2).value = "Borrower"
+	sheet.cell(row=1, column=3).value = "Group"
+	sheet.cell(row=1, column=4).value = "Amount"
+	sheet.cell(row=1, column=5).value = "Type of Expense"
+	sheet.cell(row=1, column=6).value = "Date and Time of Transaction"
+	datam+="Lender"
+	datam+="        "
+	datam+="Borrower"
+	datam+="        "
+	datam+="Group"
+	datam+="        "
+	datam+="Amount"
+	datam+="        "
+	datam+="Type of Expense"
+	datam+="        "
+	datam+="Date and Time of Transaction"
+	datam+="        "
+
+	dict0={'mv': "Movies",
+	'fd': "Food",
+	'tr': "Travel",
+	'ee': "Electronics",
+	'md': "Medical",
+	'sp': "Shopping",
+	'sv': "Services",
+	'ot': "Others"}
+	rowNum=2
+	for record in query_set:
+		datam+="\n"
+		if(record.group is None):
+			#colNum=2
+			#for colNum in range(1, 7):
+			sheet.cell(row=rowNum, column=1).value = record.lender.username
+			sheet.cell(row=rowNum, column=2).value = record.borrower.username
+			sheet.cell(row=rowNum, column=3).value = "N/A"
+			sheet.cell(row=rowNum, column=4).value = str(record.amount)
+			sheet.cell(row=rowNum, column=5).value = dict0[record.tag]
+			sheet.cell(row=rowNum, column=6).value = str(record.date)
+			datam+=record.lender.username
+			datam+="        "
+			datam+=record.borrower.username
+			datam+="        "
+			datam+="N/A"
+			datam+="        "
+			datam+=str(record.amount)
+			datam+="        "
+			datam+=dict0[record.tag]
+			datam+="        "
+			datam+=str(record.date)
+			datam+="        "
+
+			#print(record.lender.username+" "+record.borrower.username+" "+str(record.amount)+" "+record.tag+" "+str(record.date))
+			rowNum=rowNum+1
+
+		else:#change to print group name
+			sheet.cell(row=rowNum, column=1).value = record.lender.username
+			sheet.cell(row=rowNum, column=2).value = record.borrower.username
+			sheet.cell(row=rowNum, column=3).value = record.group.group_name
+			sheet.cell(row=rowNum, column=4).value = str(record.amount)
+			sheet.cell(row=rowNum, column=5).value = dict0[record.tag]
+			sheet.cell(row=rowNum, column=6).value = str(record.date)
+			#print(record.lender.username+" "+record.borrower.username+" "+str(record.amount)+" "+record.tag+" "+str(record.date))
+			datam+=record.lender.username
+			datam+="        "
+			datam+=record.borrower.username
+			datam+="        "
+			datam+=record.group.group_name
+			datam+="        "
+			datam+=str(record.amount)
+			datam+="        "
+			datam+=dict0[record.tag]
+			datam+="        "
+			datam+=str(record.date)
+			datam+="        "
+			rowNum=rowNum+1
+
+	wb.save(s)
+	pdf = fpdf.FPDF(format='letter')
+	pdf.add_page()
+	pdf.set_font("Arial", size=12)
+	pdf.write(5,str(datam))
+	pdf.output("transact_"+name+".pdf")
+
+	v=np.zeros((5,9))
+	dict2={'mv': 1,
+	'fd': 2,
+	'tr': 3,
+	'ee': 4,
+	'md': 5,
+	'sp': 6,
+	'sv': 7,
+	'ot': 8}
+	inverse_dict = {v: k for k, v in dict2.items()}
+	dictionary= {"mv": "Movies",'fd': "Food",'tr': "Travel",'ee': "Electronics",'md': "Medical",'sp': "Shopping",'sv': "Services",'ot': "Others"}
+	l3=[]
+	dict21={}
+	dates=[]
+	#p=np.zeros((8,1))
+	columns = [{} for i in range(8)]
+	for record in query_set:
+		if(record.borrower.username==name):
+			dates.append(record.date)
+	#print(len(dates))
+	#np.resize(p,(8,len(dates)))
+	#a=p.tolist()
+	#print(dates) 
+	for record in query_set:
+		if(record.borrower.username==name):
+			columns[dict2[record.tag]-1][record.date]=0.0
+
+	for record in query_set:
+		if(record.borrower.username==name):
+			columns[dict2[record.tag]-1][record.date]=columns[dict2[record.tag]-1][record.date]+float(record.amount)
+
+	#print(columns)
+	x = [list(columns[i].keys()) for i in range(8)]
+	y = [list(columns[i].values()) for i in range(8)]
+
+	for record in query_set:
+		if(record.borrower.username==name):
+			dict21[record.tag]=dict2[record.tag]+float(record.amount)
+	for (key, value) in dict21.items():
+			dict21[key]=dict21[key]-dict2[key]
+	newdict2={}
+	for (key, value) in dict21.items():
+		if value>0:
+			newdict2[key] = value
+	#print(newdict2)
+	l2k=list(newdict2.keys())
+	l2=[dictionary[i] for i in l2k]
+	v2=list(newdict2.values())
+
+	for record in query_set:
+		if(record.borrower.username==name and record.lender.username!=name):
+			l3.append(record.lender.username)
+		elif(record.lender.username==name and record.borrower.username!=name):
+			l3.append(record.borrower.username)
+	dict3 = {k:0.0 for k in l3}
+	# print("\n\ng")
+	# print(l3)
+	# print(dict3)
+	for record in query_set:
+		if(record.borrower.username==name and record.lender.username!=name):
+			dict3[record.lender.username]=dict3[record.lender.username]+float(record.amount)
+		elif(record.lender.username==name and record.borrower.username!=name):
+			dict3[record.borrower.username]=dict3[record.borrower.username]+float(record.amount)
+
+	friends = {i:{} for i in dict3.keys()}
+
+	for record in query_set:
+		# if(record.borrower.username!=name or record.lender.username!=name):
+		if(record.borrower.username==name and record.lender.username!=name):
+			friends[record.lender.username][record.group]=0
+			#dict3[record.lender.username]=dict3[record.lender.username]+float(record.amount)
+		elif(record.lender.username==name and record.borrower.username!=name):
+			friends[record.borrower.username][record.group]=0
+
+	for record in query_set:
+		# if(record.borrower.username!=name or record.lender.username!=name):
+		if(record.borrower.username==name and record.lender.username!=name):
+			friends[record.lender.username][record.group]=friends[record.lender.username][record.group]+float(record.amount)
+			#dict3[record.lender.username]=dict3[record.lender.username]+float(record.amount)
+		elif(record.lender.username==name and record.borrower.username!=name):
+			friends[record.borrower.username][record.group]=friends[record.borrower.username][record.group]+float(record.amount)
+
+
+	groups=[]
+	for record in query_set:
+		groups.append(record.group)
+
+	# print(groups)
+	dict4 = {k:{} for k in groups}
+	# print(dict3.keys())
+
+	for k in dict4.keys():
+		for f in dict3.keys():
+			dict4[k][f]=0.0
+
+
+	for record in query_set:
+		# if(record.borrower.username!=name or record.lender.username!=name):
+		if(record.borrower.username==name and record.lender.username!=name):
+			dict4[record.group][record.lender.username]=dict4[record.group][record.lender.username]+float(record.amount)
+			#dict3[record.lender.username]=dict3[record.lender.username]+float(record.amount)
+		elif(record.lender.username==name and record.borrower.username!=name):
+			dict4[record.group][record.borrower.username]=dict4[record.group][record.borrower.username]+float(record.amount)
+
+
+	t=[]
+	for record in query_set:
+		t.append(record.date.date())
+	#print(t)
+	times = {k:{} for k in t}
+
+	for record in query_set:
+		if(record.borrower.username==name and record.lender.username!=name):
+			times[record.date.date()][record.lender.username]=0
+			#dict3[record.lender.username]=dict3[record.lender.username]+float(record.amount)
+		elif(record.lender.username==name and record.borrower.username!=name):
+			times[record.date.date()][record.borrower.username]=0
+
+	for record in query_set:
+		if(record.borrower.username==name and record.lender.username!=name):
+			times[record.date.date()][record.lender.username]=times[record.date.date()][record.lender.username]+1#float(record.amount)
+			#dict3[record.lender.username]=dict3[record.lender.username]+float(record.amount)
+		elif(record.lender.username==name and record.borrower.username!=name):
+			times[record.date.date()][record.borrower.username]=times[record.date.date()][record.borrower.username]+1#float(record.amount)
+
+
+
+	
+	fig = make_subplots(
+	    rows=1, cols=2,
+	    specs=[[{"type": "pie"}, {"type": "pie"}]],
+               # [{"type": "bar"}, {"type": "bar"}]], 
+	           subplot_titles=("Category-wise Expenditure", "Debts and Arrears with Friends", "Debts and Arrears")
+	)
+	# x = [datetime(year=2013, month=10, day=4),
+	# datetime(year=2013, month=11, day=5),
+	# datetime(year=2013, month=12, day=6)]
+
+	# f = go.Figure(data=[go.Scatter(x=x, y=[1, 3, 6])])
+	# # Use datetime objects to set xaxis range
+	# f.update_layout(xaxis_range=[datetime(2013, 10, 17), datetime(2013, 11, 20)])
+
+	# f2=go.FigureWidget(f)
+	# fig.add_trace(f2)
+
+	#labels = ["Movies", "Food", "Travel", "Electronics", "Medical","Shopping","Services","Others"]
+	labels=l2
+	values = v2#[v[2][1], v[2][2], v[2][3], v[2][4], v[2][5], v[2][6], v[2][7], v[2][8]]
+	fig.add_trace(go.Pie(labels=labels,values=values),
+	              row=1, col=1)
+
+	labels = list(dict3.keys())
+	values = list(dict3.values())
+	fig.add_trace(go.Pie(labels=labels,values=values),
+	              row=1, col=2)
+
+	# fig.add_trace(go.Bar(y=[2, 3, 1]),
+	#               row=2, col=1)
+
+	# fig.add_trace(go.Bar(y=[2, 3, 1]),
+	#               row=2, col=2)
+
+	# fig.add_trace(go.Scatter3d(x=[2, 3, 1], y=[0, 0, 0], z=[0.5, 1, 2], mode="lines"),
+	#               row=2, col=2)
+
+	fig.update_layout(height=700, title_text="Insights")
+	fig.write_image("fig"+name+".pdf")
+	plot_div = plot(fig, output_type='div',include_plotlyjs=False, show_link=False, link_text="")
+
+	fig1 = go.Figure()
+	#for i in range(8):
+	# print("\n\n")
+	# print(x[1])
+	# print(y[1])
+	fig1.add_trace(go.Scatter(x=x[0], y=y[0]))
+	fig1.add_trace(go.Scatter(x=x[1], y=y[1]))
+	fig1.add_trace(go.Scatter(x=x[2], y=y[2]))
+	fig1.add_trace(go.Scatter(x=x[3], y=y[3]))
+	fig1.add_trace(go.Scatter(x=x[4], y=y[4]))
+	fig1.add_trace(go.Scatter(x=x[5], y=y[5]))
+	fig1.add_trace(go.Scatter(x=x[6], y=y[6]))
+	fig1.add_trace(go.Scatter(x=x[7], y=y[7]))
+	#fig1.add_trace(go.Scatter(x=x[5], y=y[5]))
+	#fig1 = go.Figure(data=[go.Scatter(x=x[1], y=y[1])])
+	#fig = go.Figure(data=[go.Scatter(x=x, y=[1, 3, 6])])
+# Use datetime objects to set xaxis range datetime.combine(date.today(), datetime.min.time())
+	fig1.update_layout(xaxis_range=[datetime.combine(start_date, datetime.min.time()),datetime.combine(end_date, datetime.min.time())],title_text="Expenditure vs Time")
+	fig1.write_image("fig1"+name+".pdf")
+	plot_div2 = plot(fig1, output_type='div',include_plotlyjs=False, show_link=False, link_text="")
+	# animals=['giraffes', 'orangutans', 'monkeys']
+	# fig2 = go.Figure(data=[go.Bar(name='SF Zoo', x=animals, y=[20, 14, 23]),go.Bar(name='LA Zoo', x=animals, y=[12, 18, 29])
+	# ])
+# Change the bar mode
+	#dict4[groups][friends]
+	fig2 = go.Figure()
+	dict5={k:k.group_name if k is not None else "Outside Group" for k in dict4.keys()}
+	for k in dict4.keys():
+		fig2.add_trace(go.Bar(x=list(dict4[k].keys()), y=list(dict4[k].values()), name=dict5[k]))
+	fig2.update_layout(barmode='stack',title_text="Group Expenditures vs Friends")
+	fig2.write_image("fig2"+name+".pdf")
+	plot_div3 = plot(fig2, output_type='div',include_plotlyjs=False, show_link=False, link_text="")
+
+
+
+	#fig3 = go.Figure()
+	# import plotly.express as px
+	# gapminder = px.data.gapminder()
+	# fig3 = px.area(gapminder, x="day", y="exp_in_group", color="groups", line_group="country")
+
+	# fig3 = go.Figure(data=go.Scatter(
+	# x=[1, 2, 3, 4],
+	# y=[10, 11, 12, 13],
+	# mode='markers',
+	# marker=dict(size=[40, 60, 80, 100],color=[0, 1, 2, 3])))
+
+	#x1=list(times.keys()),
+	x1=[]
+	print(x1)
+	print(times)
+	for (k,v) in times.items():
+		for i in range(len(v)):
+			x1.append(k)
+
+	print("\n")
+	print(x1)
+	print("\n")
+	y1=[list(times[k].keys()) for k in times.keys()]
+	print(y1)
+	flat_list_y = []
+	for sublist in y1:
+		for item in sublist:
+			flat_list_y.append(item)
+	l1=[list(times[k].values()) for k in times.keys()]
+	flat_list_l = []
+	for sublist in l1:
+		for item in sublist:
+			flat_list_l.append(15*item)
+
+	# print(x1)
+	# print(y1)
+
+	fig3 = go.Figure(data=go.Scatter(
+		x=x1,
+		y=flat_list_y,
+		mode='markers',
+		marker=dict(size=flat_list_l,color=[i for i in range(len(flat_list_l))])
+	))
+	
+
+
+	fig3.update_layout(height=700,xaxis_range=[datetime.combine(start_date, datetime.min.time()).date(),datetime.combine(end_date, datetime.min.time()).date()],title_text="Number of Transactions vs Friends vs Time")
+	fig3.write_image("fig3"+name+".pdf")
+	plot_div4 = plot(fig3, output_type='div',include_plotlyjs=False, show_link=False, link_text="")
+
+	# h=m+".pdf"
+	# pw = PDFWriter(h)
+	# pw.setFont('Courier', 12)
+	# pw.setHeader('XLSXtoPDF.py - convert XLSX data to PDF')
+	# pw.setFooter('Generated using openpyxl and xtopdf')
+
+	# ws_range = worksheet.iter_rows('A1:H13')
+	# for row in ws_range:
+	# 	st = ''
+	# for cell in row:
+	# 	if cell.value is None:
+	# 		st += ' ' * 11
+	# 	else:
+	# 		st += str(cell.value).rjust(10) + ' '
+	# 	pw.writeLine(st)
+	# pw.savePage()
+	# pw.close()
+	# strc=str(me)
+	# strf="out_"+strc+".pdf"
+	# stri="al"
+	# stri=stri+strf
+	# r=str(stri)
+	# file_path = os.path.join(settings.BASE_DIR, "templates/insights.html")
+	# pdfkit.from_file(file_path, str(stri)) 
+	pdfs = ['front.pdf', 'transact_'+name+'.pdf',"fig"+name+".pdf", "fig1"+name+".pdf", "fig2"+name+".pdf","fig3"+name+".pdf"]
+
+	merger = PdfFileMerger( strict=False)
+
+	for pdf in pdfs:
+		merger.append(pdf)
+
+	merger.write("Transactions_"+name+".pdf")
+	merger.close()
+
+	if request.method == 'POST':
+		if 'downloadx' in request.POST:
+			# print('excel')
+			m="Transactions_"+name
+			s=m+".xlsx"
+			file_path = os.path.join(settings.BASE_DIR, s)
+			if os.path.exists(file_path):
+				with open(file_path, 'rb') as fh:
+					response = HttpResponse(fh.read(), content_type="application/vnd.ms-excel")
+					response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+					return response
+			raise Http404
+
+		if 'downloadpdf' in request.POST:
+			print('pdf')
+			m="Transactions_"+name
+			h=m+".pdf"
+			file_path = os.path.join(settings.BASE_DIR, h)
+			if os.path.exists(file_path):
+				with open(file_path, 'rb') as fh:
+					response = HttpResponse(fh.read(), content_type="application/pdf'")
+					response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+					return response
+			raise Http404
+
+
+	#CHANGE
+
+		# if(y.person2.username==f):
+		# 	z = y.money_owed
+		# 	a = str(y.person2)
+	# template=loader.get_template('home.html')
+	# x=''
+	# context = {
+	# 	'x' : x
+	# }
+	# #return HttpResponse(template.render(context, request))
+	# return HttpResponse('success')
+	return render(request, "insights.html", context={'plot_div1': plot_div, 'plot_div2':plot_div2, 'plot_div3':plot_div3, 'plot_div4':plot_div4})
+
+# def download(request, path):
+# 	me = request.user
+# 	name=me.username
+# 	m="Transactions_"+name
+# 	s=m+".xlsx"
+# 	file_path = os.path.join(settings.BASE_DIR, s)
+# 	if os.path.exists(file_path):
+# 		with open(file_path, 'rb') as fh:
+# 			response = HttpResponse(fh.read(), content_type="application/vnd.ms-excel")
+# 			response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+# 			return response
+# 	raise Http404
