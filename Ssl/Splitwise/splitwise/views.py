@@ -973,6 +973,7 @@ def Insights(request):
 	'md': "Medical",
 	'sp': "Shopping",
 	'sv': "Services",
+	'st': 'Settle',
 	'ot': "Others"}
 	rowNum=2
 	for record in query_set:
@@ -1039,14 +1040,15 @@ def Insights(request):
 	'md': 5,
 	'sp': 6,
 	'sv': 7,
-	'ot': 8}
+	'st': 8,
+	'ot': 9}
 	inverse_dict = {v: k for k, v in dict2.items()}
-	dictionary= {"mv": "Movies",'fd': "Food",'tr': "Travel",'ee': "Electronics",'md': "Medical",'sp': "Shopping",'sv': "Services",'ot': "Others"}
+	dictionary= {"mv": "Movies",'fd': "Food",'tr': "Travel",'ee': "Electronics",'md': "Medical",'sp': "Shopping",'sv': "Services",'st': 'Settle','ot': "Others"}
 	l3=[]
 	dict21={}
 	dates=[]
 	#p=np.zeros((8,1))
-	columns = [{} for i in range(8)]
+	columns = [{} for i in range(9)]
 	for record in query_set:
 		if(record.borrower.username==name):
 			dates.append(record.date)
@@ -1063,8 +1065,8 @@ def Insights(request):
 			columns[dict2[record.tag]-1][record.date]=columns[dict2[record.tag]-1][record.date]+float(record.amount)
 
 	#print(columns)
-	x = [list(columns[i].keys()) for i in range(8)]
-	y = [list(columns[i].values()) for i in range(8)]
+	x = [list(columns[i].keys()) for i in range(9)]
+	y = [list(columns[i].values()) for i in range(9)]
 
 	for record in query_set:
 		if(record.borrower.username==name):
@@ -1212,7 +1214,7 @@ def Insights(request):
 	fig1.add_trace(go.Scatter(x=x[4], y=y[4]))
 	fig1.add_trace(go.Scatter(x=x[5], y=y[5]))
 	fig1.add_trace(go.Scatter(x=x[6], y=y[6]))
-	fig1.add_trace(go.Scatter(x=x[7], y=y[7]))
+	fig1.add_trace(go.Scatter(x=x[8], y=y[8]))
 	#fig1.add_trace(go.Scatter(x=x[5], y=y[5]))
 	#fig1 = go.Figure(data=[go.Scatter(x=x[1], y=y[1])])
 	#fig = go.Figure(data=[go.Scatter(x=x, y=[1, 3, 6])])
