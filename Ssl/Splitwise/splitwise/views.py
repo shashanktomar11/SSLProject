@@ -826,14 +826,14 @@ def Insights(request):
 	sheet.column_dimensions['B'].width = 20
 	sheet.column_dimensions['C'].width = 20
 	sheet.column_dimensions['D'].width = 20
-	sheet.column_dimensions['E'].width = 30
-	sheet.column_dimensions['F'].width = 20
+	sheet.column_dimensions['E'].width = 20
+	sheet.column_dimensions['F'].width = 30
 	sheet.cell(row=1, column=1).value = "Lender"
 	sheet.cell(row=1, column=2).value = "Borrower"
-	#group id if any to be inserted
-	sheet.cell(row=1, column=3).value = "Amount"
-	sheet.cell(row=1, column=4).value = "Type of Expense"
-	sheet.cell(row=1, column=5).value = "Date and Time of Transaction"
+	sheet.cell(row=1, column=3).value = "Group"
+	sheet.cell(row=1, column=4).value = "Amount"
+	sheet.cell(row=1, column=5).value = "Type of Expense"
+	sheet.cell(row=1, column=6).value = "Date and Time of Transaction"
 	dict0={'mv': "Movies",
 	'fd': "Food",
 	'tr': "Travel",
@@ -849,18 +849,20 @@ def Insights(request):
 			#for colNum in range(1, 7):
 			sheet.cell(row=rowNum, column=1).value = record.lender.username
 			sheet.cell(row=rowNum, column=2).value = record.borrower.username
-			sheet.cell(row=rowNum, column=3).value = str(record.amount)
-			sheet.cell(row=rowNum, column=4).value = dict0[record.tag]
-			sheet.cell(row=rowNum, column=5).value = str(record.date)
+			sheet.cell(row=rowNum, column=3).value = "N/A"
+			sheet.cell(row=rowNum, column=4).value = str(record.amount)
+			sheet.cell(row=rowNum, column=5).value = dict0[record.tag]
+			sheet.cell(row=rowNum, column=6).value = str(record.date)
 			#print(record.lender.username+" "+record.borrower.username+" "+str(record.amount)+" "+record.tag+" "+str(record.date))
 			rowNum=rowNum+1
 
 		else:#change to print group name
 			sheet.cell(row=rowNum, column=1).value = record.lender.username
 			sheet.cell(row=rowNum, column=2).value = record.borrower.username
-			sheet.cell(row=rowNum, column=3).value = str(record.amount)
-			sheet.cell(row=rowNum, column=4).value = dict0[record.tag]
-			sheet.cell(row=rowNum, column=5).value = str(record.date)
+			sheet.cell(row=rowNum, column=3).value = record.group.group_name
+			sheet.cell(row=rowNum, column=4).value = str(record.amount)
+			sheet.cell(row=rowNum, column=5).value = dict0[record.tag]
+			sheet.cell(row=rowNum, column=6).value = str(record.date)
 			#print(record.lender.username+" "+record.borrower.username+" "+str(record.amount)+" "+record.tag+" "+str(record.date))
 			rowNum=rowNum+1
 
@@ -943,10 +945,52 @@ def Insights(request):
 		elif(record.lender.username==name and record.borrower.username!=name):
 			dict3[record.borrower.username]=dict3[record.borrower.username]+float(record.amount)
 
+	friends = {i:{} for i in dict3.keys()}
+
+	for record in query_set:
+		# if(record.borrower.username!=name or record.lender.username!=name):
+		if(record.borrower.username==name and record.lender.username!=name):
+			friends[record.lender.username][record.group]=0
+			#dict3[record.lender.username]=dict3[record.lender.username]+float(record.amount)
+		elif(record.lender.username==name and record.borrower.username!=name):
+			friends[record.borrower.username][record.group]=0
+
+	for record in query_set:
+		# if(record.borrower.username!=name or record.lender.username!=name):
+		if(record.borrower.username==name and record.lender.username!=name):
+			friends[record.lender.username][record.group]=friends[record.lender.username][record.group]+float(record.amount)
+			#dict3[record.lender.username]=dict3[record.lender.username]+float(record.amount)
+		elif(record.lender.username==name and record.borrower.username!=name):
+			friends[record.borrower.username][record.group]=friends[record.borrower.username][record.group]+float(record.amount)
+
+
+	groups=[]
+	for record in query_set:
+		groups.append(record.group)
+
+	print(groups)
+	dict4 = {k:{} for k in groups}
+	print(dict3.keys())
+
+	for k in dict4.keys():
+		for f in dict3.keys():
+			dict4[k][f]=0.0
+
+
+	for record in query_set:
+		# if(record.borrower.username!=name or record.lender.username!=name):
+		if(record.borrower.username==name and record.lender.username!=name):
+			dict4[record.group][record.lender.username]=dict4[record.group][record.lender.username]+float(record.amount)
+			#dict3[record.lender.username]=dict3[record.lender.username]+float(record.amount)
+		elif(record.lender.username==name and record.borrower.username!=name):
+			dict4[record.group][record.borrower.username]=dict4[record.group][record.borrower.username]+float(record.amount)
+
+
+	
 	fig = make_subplots(
-	    rows=2, cols=2,
-	    specs=[[{"type": "pie"}, {"type": "pie"}],
-               [{"type": "bar"}, {"type": "bar"}]], 
+	    rows=1, cols=2,
+	    specs=[[{"type": "pie"}, {"type": "pie"}]],
+               # [{"type": "bar"}, {"type": "bar"}]], 
 	           subplot_titles=("Category-wise Expenditure", "Debts and Arrears with Friends", "Debts and Arrears")
 	)
 	# x = [datetime(year=2013, month=10, day=4),
@@ -971,11 +1015,11 @@ def Insights(request):
 	fig.add_trace(go.Pie(labels=labels,values=values),
 	              row=1, col=2)
 
-	fig.add_trace(go.Bar(y=[2, 3, 1]),
-	              row=2, col=1)
+	# fig.add_trace(go.Bar(y=[2, 3, 1]),
+	#               row=2, col=1)
 
-	fig.add_trace(go.Bar(y=[2, 3, 1]),
-	              row=2, col=2)
+	# fig.add_trace(go.Bar(y=[2, 3, 1]),
+	#               row=2, col=2)
 
 	# fig.add_trace(go.Scatter3d(x=[2, 3, 1], y=[0, 0, 0], z=[0.5, 1, 2], mode="lines"),
 	#               row=2, col=2)
@@ -1002,11 +1046,16 @@ def Insights(request):
 # Use datetime objects to set xaxis range datetime.combine(date.today(), datetime.min.time())
 	fig1.update_layout(xaxis_range=[datetime.combine(start_date, datetime.min.time()),datetime.combine(end_date, datetime.min.time())],title_text="Expenditure vs Time")
 	plot_div2 = plot(fig1, output_type='div',include_plotlyjs=False, show_link=False, link_text="")
-	animals=['giraffes', 'orangutans', 'monkeys']
-	fig2 = go.Figure(data=[go.Bar(name='SF Zoo', x=animals, y=[20, 14, 23]),go.Bar(name='LA Zoo', x=animals, y=[12, 18, 29])
-	])
+	# animals=['giraffes', 'orangutans', 'monkeys']
+	# fig2 = go.Figure(data=[go.Bar(name='SF Zoo', x=animals, y=[20, 14, 23]),go.Bar(name='LA Zoo', x=animals, y=[12, 18, 29])
+	# ])
 # Change the bar mode
-	fig2.update_layout(barmode='stack')
+	#dict4[groups][friends]
+	fig2 = go.Figure()
+	dict5={k:k.group_name if k is not None else "Outside Group" for k in dict4.keys()}
+	for k in dict4.keys():
+		fig2.add_trace(go.Bar(x=list(dict4[k].keys()), y=list(dict4[k].values()), name=dict5[k]))
+	fig2.update_layout(barmode='stack',title_text="Group Expenditures vs Friends")
 	plot_div3 = plot(fig2, output_type='div',include_plotlyjs=False, show_link=False, link_text="")
 
 	#CHANGE
