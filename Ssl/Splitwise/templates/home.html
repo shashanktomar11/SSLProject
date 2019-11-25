@@ -20,6 +20,12 @@
     <img src="default_face.png" width="200" height="200">
   {% endif %}
   <p><a href="{% url 'logout' %}">logout</a></p>
+  <p><a href="{% url 'password_change' %}">change password</a></p>
+  <p><a href="{% url 'notification' %}">notification</a></p>
+  <p>You have {{ no_of_messages }} messages</p>
+  {% if new_messages != 0 %}
+    <p style="color:red">You have {{ new_messages }} new messages</p>
+  {% endif %}
   <br>
   <br>
   <br>
@@ -79,9 +85,9 @@
         {% else %}
         <td><font color = red>{{ g.money_owed }}</font></td>
         {% endif %}
-        <td><form action="/SSL/" method="POST">
+        <td><form action="/splitwise/success/" method="POST">
         {% csrf_token %}
-        <input type="submit" value="Leave" name= "{{ g.name }}">
+        <input type="submit" value="Delete" name= "{{ g.group.group_name }}">
         </form></td>
     </tr>
     {% endfor %}

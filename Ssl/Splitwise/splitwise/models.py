@@ -13,6 +13,12 @@ class Friend(models.Model):
 	def __str__(self):
 		return self.person2.username
 
+class Message(models.Model):
+	person1 = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete = models.CASCADE, related_name='mperson1')
+	person2 = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete = models.CASCADE, related_name='mperson2')
+	message = models.CharField(max_length=500)
+	date = models.DateTimeField(default=datetime.now)
+
 class Group(models.Model):
 	group_name = models.CharField(max_length=30)
 	no_transactions = models.IntegerField(default=0)
@@ -74,6 +80,7 @@ class Profile(models.Model):
 	#location = models.CharField(max_length=30, blank=True)
 	#birth_date = models.DateField(null=True, blank=True)
 	image = models.ImageField(upload_to='profile_image', blank=True, default="default_face.png")
+	no_of_messages = models.IntegerField(default=0)
 
 	def __str__(self):
 		return self.user.username

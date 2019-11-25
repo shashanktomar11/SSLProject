@@ -21,7 +21,9 @@ urlpatterns = [
     path('group/<str:g>/', views.group, name='group'),
     path('activity_tab/', views.activity_tab, name='activity_tab'),
     path('detailed_activity/<str:i>/',views.detailed_activity1, name='detailed_activity'),
-    path('detailed_activity/<str:i>/<str:j>/',views.detailed_activity2, name='detailed_activity')
+    path('detailed_activity/<str:i>/<str:j>/',views.detailed_activity2, name='detailed_activity'),
+    path('notification/', views.notification, name = 'notification'),
+    path('remind/<str:f>/', views.remind, name='remind')
 ]
 
 if settings.DEBUG: 

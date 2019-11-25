@@ -31,6 +31,9 @@ class ProfileUpdateForm(forms.ModelForm):
 		model = Profile
 		fields = ('image',)
 
+class ReminderForm(forms.Form):
+		message = forms.CharField(label="message", max_length=500)
+
 class FriendForm(forms.Form):
 	your_name = forms.CharField(label="Friend's username", max_length=100)
 
@@ -84,8 +87,10 @@ class TransactionForm(forms.Form):
 		self.fields['who_paid'] = forms.MultipleChoiceField(
 		choices=involved
 		)
+		self.field_names = []
 		for i in involved:
 			self.fields[i[0]+' (%)'] = forms.DecimalField(decimal_places=2,max_digits=10,required = False)
+			self.field_names.append(i[0]+ ' (%)')
 	MOVIES = 'mv'
 	FOOD = 'fd'
 	TRAVEL = 'tr'
@@ -105,12 +110,30 @@ class TransactionForm(forms.Form):
 		(OTHERS, 'Others')
 	]
 	tag = forms.ChoiceField(choices=TAG_CHOICES)
+	def clean(self):
+		cleaned_data = super().clean()
+		#print('FFF')
+		data = self.cleaned_data
+		y = cleaned_data.get('split')
+		if y == 'unequal':
+			z = 0
+			for i in self.field_names:
+				x = cleaned_data.get(i)
+
+				if x == None:
+					#print('FFF')
+					raise forms.ValidationError('Enter Shares')
+				z = z + x
+				print(z)
+			if z != 100:
+				raise forms.ValidationError('Total not 100')
 	
 	
 class GroupTransactionForm(forms.Form):
 	description = forms.CharField(max_length=30)
 	who_paid = forms.MultipleChoiceField(choices=[])
 	amount = forms.DecimalField(decimal_places=2,max_digits=10)
+	field_names = []
 	CHOICES = [
 		('equal', 'Split Equally'),
 		('unequal', 'Split Unequally')
@@ -121,8 +144,10 @@ class GroupTransactionForm(forms.Form):
 		self.fields['who_paid'] = forms.MultipleChoiceField(
 		choices=involved
 		)
+		self.field_names = []
 		for i in involved:
 			self.fields[i[0]+' (%)'] = forms.DecimalField(decimal_places=2,max_digits=10,required = False)
+			self.field_names.append(i[0]+ ' (%)')
 	MOVIES = 'mv'
 	FOOD = 'fd'
 	TRAVEL = 'tr'
@@ -144,7 +169,24 @@ class GroupTransactionForm(forms.Form):
 		(OTHERS, 'Others')
 	]
 	tag = forms.ChoiceField(choices=TAG_CHOICES)
-	
+	def clean(self):
+		cleaned_data = super().clean()
+		#print('FFF')
+		data = self.cleaned_data
+		y = cleaned_data.get('split')
+		if y == 'unequal':
+			z = 0
+			for i in self.field_names:
+				x = cleaned_data.get(i)
+
+				if x == None:
+					#print('FFF')
+					raise forms.ValidationError('Enter Shares')
+				z = z + x
+				print(z)
+			if z != 100:
+				raise forms.ValidationError('Total not 100')
+
 			
 
 #class EditProfileForm(forms.Form):

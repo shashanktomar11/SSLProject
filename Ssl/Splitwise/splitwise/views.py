@@ -39,6 +39,29 @@ class EditProfile(generic.CreateView):
 #		form = ProfileUpdateForm() 
 #		return render(request, 'editprofile.html', {'form' : form}) 
   
+def remind(request, f):
+	me = User.objects.get(username=request.user.get_username())
+	other = User.objects.get(id=f)
+	template = loader.get_template('remind.html')
+	reminder_form = ReminderForm()
+	if request.method == 'POST':
+		print('f')
+		if 'remind' in request.POST:
+			#print(request.user.profile.bio)
+			reminder_form = ReminderForm(request.POST)
+			if reminder_form.is_valid():
+				print('f')
+				message1 = reminder_form.cleaned_data['message']
+				print(message1)
+				mess = Message(person1=me, person2=other, message=message1)
+				mess.save()
+				return HttpResponseRedirect("/splitwise/friend/"+f+"/")
+	context = {
+		'reminder_form' : reminder_form,
+		'f' : f
+	}
+	return HttpResponse(template.render(context, request))
+	#return(HttpResponse('success'))
   
 def success(request):
 	me = User.objects.get(username=request.user.get_username())
@@ -73,6 +96,7 @@ def success(request):
 				if User.objects.filter(username=friend_id).exists():
 					friend = User.objects.get(username=friend_id)
 					if friend == me:
+						raise forms.ValidationError("f")
 						print('F')
 					elif Friend.objects.filter(person1=me,person2=friend).exists() or Friend.objects.filter(person1=friend,person2=me).exists():
 						print("f")
@@ -86,7 +110,7 @@ def success(request):
 				return HttpResponseRedirect("/splitwise/success/")
 
 						
-		if 'group' in request.POST:
+		elif 'group' in request.POST:
 			
 			group_form = GroupForm(final_choices, request.POST)
 			if group_form.is_valid():
@@ -112,6 +136,16 @@ def success(request):
 					m.save()
 					#print(member)
 				return HttpResponseRedirect("/splitwise/success/") 
+		else:
+			for g in Group.objects.all():
+				if g.group_name in request.POST:
+					money = 0
+					m = Membership.objects.filter(group = g)
+					for x in m:
+						if x.money_owed != 0:
+							money = 1
+					if money == 0:
+						g.delete()
 	else:
 		friend_form=FriendForm()
 		group_form=GroupForm(final_choices)
@@ -156,13 +190,27 @@ def success(request):
 				#print(bio)
 	else:
 		edit_profile_form=ProfileUpdateForm()
+
+	message_list = Message.objects.filter(person2=me)
+	no_of_messages_previously = me.profile.no_of_messages
+	no_of_messages = len(message_list)
+	new_messages = 0
+	#print(no_of_messages)
+	#print(no_of_messages_previously)
+	
+	if( no_of_messages > no_of_messages_previously ):
+		new_messages = no_of_messages - no_of_messages_previously
+		me.profile.no_of_messages = no_of_messages
+		me.profile.save()
 	
 	context = {
 		'friend_form' : friend_form,
 		'group_form' : group_form,
 		'friends_list' : friends_list,
 		'groups_list' : groups_list,
-		'edit_profile_form' : edit_profile_form
+		'edit_profile_form' : edit_profile_form,
+		'no_of_messages' : no_of_messages,
+		'new_messages' : new_messages
 	}
 	
 
@@ -214,7 +262,7 @@ def friend(request,f):
 				t.save()
 				Transaction.no_transactions = Transaction.no_transactions + 1
 			elif zxxx<0:
-				t = Transaction(group_transaction_id=Transaction.no_transactions,lender=me,borrower=friend,description='Settling!',amount=-1*zxxx,tag='st',added_by=me,paid_by=friend)
+				t = Transaction(group_transaction_id=Transaction.no_transactions,lender=me,borrower=friend,description='Settling!',amount=-1*zxxx,tag='st',added_by=me,paid_by=me)
 				t.save()
 				Transaction.no_transactions = Transaction.no_transactions + 1
 			else:
@@ -237,7 +285,7 @@ def friend(request,f):
 					g[0].save()
 				elif g[1] < 0:
 					no = g[0].no_transactions
-					t = Transaction(group=g[0],group_transaction_id=no,lender=me,borrower=friend,description='Settling!',amount=-1*g[1],tag='st',added_by=me,paid_by=friend)
+					t = Transaction(group=g[0],group_transaction_id=no,lender=me,borrower=friend,description='Settling!',amount=-1*g[1],tag='st',added_by=me,paid_by=me)
 					t.save()
 					m1 = Membership.objects.get(group=g[0],friend=friend)
 					z = m1.money_owed - (-1*g[1])
@@ -281,7 +329,8 @@ def friend(request,f):
 		'boolean' : boolean,
 		'a' : a,
 		'friend':friend,
-		'lst':lst
+		'lst':lst,
+		'f' : f
 		#'groups_list':groups_list
 	}
 	return HttpResponse(template.render(context, request))
@@ -362,7 +411,7 @@ def group(request,g):
 							amt = amt - t.amount
 					if amt>0:
 						no = group.no_transactions
-						t = Transaction(group=group,group_transaction_id=no,lender=f,borrower=me,description='Settling!',amount=amt,tag='st',added_by=me,paid_by=friend)
+						t = Transaction(group=group,group_transaction_id=no,lender=f,borrower=me,description='Settling!',amount=amt,tag='st',added_by=me,paid_by=f)
 						t.save()
 						m1 = Membership.objects.get(group=group,friend=me)
 						z = m1.money_owed - amt
@@ -438,7 +487,6 @@ def activity_tab(request):
 		#print(x[i])
 		if(x[i].lender==me and x[i].borrower==me):
 			i = i+1
-			pass
 		else:
 			if(x[i].lender==me):
 				money.append(x[i].amount)
@@ -453,12 +501,16 @@ def activity_tab(request):
 				additional_info.append(x[i].group.group_name)
 			j=i+1
 			if(j>=len(x)):
+				exit=True
 				break
 				#print(j)
 			while(x[j].group_id == x[i].group_id and x[j].group_transaction_id == x[i].group_transaction_id):
 				if( j < len(x)):
 					if(x[j].lender==me and x[j].borrower==me):
 						j = j+1
+						if(j>=len(x)):
+							exit=True
+							break
 						pass
 					else:
 						if(x[j].lender==me):
@@ -466,6 +518,9 @@ def activity_tab(request):
 						else:
 							money[no_of_activities]-=x[j].amount
 						j=j+1
+						if(j>=len(x)):
+							exit=True
+							break
 				else:
 					exit=True
 					break
@@ -477,11 +532,11 @@ def activity_tab(request):
 		#print(str(desc[i])+" "+str(money[i]))
 		#print(x.transaction
 	#send_list = [desc, money]#, additional_info]
-	for i in range(money):
+	for i in range(len(money)):
 		if money[i] >= 0:
 			boolean.append(1)
 		else:
-			boolean.append(1)
+			boolean.append(0)
 			money[i]=-1*money[i]
 	send_list = zip(money,desc,additional_info,transactions,boolean)
 	#print(send_list)
@@ -497,6 +552,7 @@ def detailed_activity1(request, i):
 	share = []
 	payer = ''
 	total_amount=0;
+	print(len(y))
 	if(len(y) == 1):
 		payer = y[0].lender.username
 		total_amount = y[0].amount
@@ -520,8 +576,8 @@ def detailed_activity1(request, i):
 	#return HttpResponse('success')
 
 def detailed_activity2(request, i, j):
-	x = Group.objects.filter(id=i)
-	y = Transaction.objects.filter(group=x[0], group_transaction_id=j)
+	x = Group.objects.get(id=i)
+	y = Transaction.objects.filter(group=x, group_transaction_id=j)
 	#print(y)
 	person = []
 	share = []
@@ -584,16 +640,17 @@ def transaction_form(request):
 	choices = request.session.get('choices')
 	template = loader.get_template('transaction_form.html')
 	transaction_form = TransactionForm(final_choices)
+	#print(transaction_form.field_names)
 	if request.method == 'POST':
 		if 'transaction' in request.POST:
 			transaction_form=TransactionForm(final_choices, request.POST)
 			if transaction_form.is_valid():
 				desc = transaction_form.cleaned_data['description']
 				who_paid = transaction_form.cleaned_data['who_paid']
-				print(who_paid)
+				#print(who_paid)
 				amt = transaction_form.cleaned_data['amount']
 				split = transaction_form.cleaned_data['split']
-				print(split)
+				#print(split)
 				tag = transaction_form.cleaned_data['tag']
 				shares = {}
 				for i in final_choices:
@@ -603,12 +660,12 @@ def transaction_form(request):
 				
 				if split == 'equal':
 					share_amt = amt/len(final_choices)
-					print(share_amt)
+					#print(share_amt)
 					t1 = Transaction(group_transaction_id=Transaction.no_transactions,lender=payer,borrower=payer,description=desc,amount=share_amt,tag=tag,added_by=me,paid_by=payer)
 					t1.save()
 					for p in final_choices:
 
-						print(p[0])
+						#print(p[0])
 						user = User.objects.get(username=p[0])
 						if user!=payer:
 							t = Transaction(group_transaction_id=Transaction.no_transactions,lender=payer,borrower=user,description=desc,amount=share_amt,tag=tag,added_by=me,paid_by=payer)
@@ -639,8 +696,9 @@ def transaction_form(request):
 							f2.money_owed=y
 							f2.save()
 
-						print(share_amt)
+						#print(share_amt)
 				Transaction.no_transactions = Transaction.no_transactions + 1
+				print(Transaction.no_transactions)
 				return HttpResponseRedirect('/splitwise/success/')
 	else:
 		transaction_form = TransactionForm(final_choices)
@@ -654,27 +712,28 @@ def group_transaction(request):
 	me=request.user
 	template = loader.get_template('group_transaction.html')
 	group_id=request.session.get('group')
-	print(group_id)
+	#print(group_id)
 	this_group=Group.objects.get(id=group_id)
-	print(this_group)
+	#print(this_group)
 	final_choices=()
 	members = Membership.objects.filter(group=this_group)
 	print(members)
 	for m in members:
 		final_choices = final_choices + ((m.friend.username, m.friend.username),)
 		
-	print(final_choices)
+	#print(final_choices)
 	group_transaction_form = GroupTransactionForm(final_choices)
+	#print(group_transaction_form.field_names)
 	if request.method == 'POST':
 		if 'group_transaction' in request.POST:
 			group_transaction_form=GroupTransactionForm(final_choices, request.POST)
 			if group_transaction_form.is_valid():
 				desc = group_transaction_form.cleaned_data['description']
 				who_paid = group_transaction_form.cleaned_data['who_paid']
-				print(who_paid)
+				#print(who_paid)
 				amt = group_transaction_form.cleaned_data['amount']
 				split = group_transaction_form.cleaned_data['split']
-				print(split)
+				#print(split)
 				tag = group_transaction_form.cleaned_data['tag']
 				no = this_group.no_transactions
 				shares = {}
@@ -685,13 +744,13 @@ def group_transaction(request):
 				
 				if split == 'equal':
 					share_amt = amt/len(final_choices)
-					print(share_amt)
+					#print(share_amt)
 					t1 = Transaction(group=this_group,group_transaction_id=no,lender=payer,borrower=payer,description=desc,amount=share_amt,tag=tag,added_by=me,paid_by=payer)
 					t1.save()
 					
 					for p in final_choices:
 
-						print(p[0])
+						#print(p[0])
 						user = User.objects.get(username=p[0])
 						if user!=payer:
 							t = Transaction(group=this_group,group_transaction_id=no,lender=payer,borrower=user,description=desc,amount=share_amt,tag=tag,added_by=me,paid_by=payer)
@@ -737,14 +796,17 @@ def group_transaction(request):
 							y = f2.money_owed - share_amt
 							f2.money_owed=y
 							f2.save()
+				x = this_group.no_transactions + 1
+				this_group.no_transactions = x 
+				this_group.save()
+				return HttpResponseRedirect('/splitwise/success/')			
+			else:
+				return HttpResponseRedirect('/splitwise/groups/transaction/')
 						
 				
 
 
-				x = this_group.no_transactions + 1
-				this_group.no_transactions = x 
-				this_group.save()
-				return HttpResponseRedirect('/splitwise/success/')
+		
 	else:
 		group_transaction_form = GroupTransactionForm(final_choices)
 	context = {
@@ -785,3 +847,15 @@ def balances(request):
 		'money_friends':money_friends
 	}
 	return(HttpResponse(template.render(context,request)))
+
+def notification(request):
+	me = request.user
+	sent_messages = Message.objects.filter(person1=me).order_by('date')
+	received_messages = Message.objects.filter(person2=me).order_by('date')
+	context = {
+		'sent_messages' : sent_messages,
+		'received_messages' : received_messages
+	}
+	template = loader.get_template('notification.html')
+	return(HttpResponse(template.render(context,request)))
+
