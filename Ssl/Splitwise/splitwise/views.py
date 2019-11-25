@@ -13,6 +13,7 @@ from plotly.subplots import make_subplots
 import numpy as np
 import pandas as pd
 import scipy as sp
+import plotly.express as px
 
 
 from django.contrib.auth.forms import UserCreationForm
@@ -809,9 +810,9 @@ def Insights(request):
 	#print(q1)
 	start_date=date(2019, 11, 11)
 	end_date=date(2019, 11, 29)
-	print(me)
+	# print(me)
 	query_set = Transaction.objects.filter(Q(lender=me)|Q(borrower=me),date__range=(start_date, end_date)) # Poll.objects.get(Q(question__startswith='Who'),Q(pub_date=date(2005, 5, 2)) | Q(pub_date=date(2005, 5, 6)))
-	print(query_set)
+	# print(query_set)
 	wb = openpyxl.Workbook()
 	sheet = wb.active
 	sheet.title = "Transaction History"
@@ -968,9 +969,9 @@ def Insights(request):
 	for record in query_set:
 		groups.append(record.group)
 
-	print(groups)
+	# print(groups)
 	dict4 = {k:{} for k in groups}
-	print(dict3.keys())
+	# print(dict3.keys())
 
 	for k in dict4.keys():
 		for f in dict3.keys():
@@ -984,6 +985,28 @@ def Insights(request):
 			#dict3[record.lender.username]=dict3[record.lender.username]+float(record.amount)
 		elif(record.lender.username==name and record.borrower.username!=name):
 			dict4[record.group][record.borrower.username]=dict4[record.group][record.borrower.username]+float(record.amount)
+
+
+	t=[]
+	for record in query_set:
+		t.append(record.date.date())
+	#print(t)
+	times = {k:{} for k in t}
+
+	for record in query_set:
+		if(record.borrower.username==name and record.lender.username!=name):
+			times[record.date.date()][record.lender.username]=0
+			#dict3[record.lender.username]=dict3[record.lender.username]+float(record.amount)
+		elif(record.lender.username==name and record.borrower.username!=name):
+			times[record.date.date()][record.borrower.username]=0
+
+	for record in query_set:
+		if(record.borrower.username==name and record.lender.username!=name):
+			times[record.date.date()][record.lender.username]=times[record.date.date()][record.lender.username]+1#float(record.amount)
+			#dict3[record.lender.username]=dict3[record.lender.username]+float(record.amount)
+		elif(record.lender.username==name and record.borrower.username!=name):
+			times[record.date.date()][record.borrower.username]=times[record.date.date()][record.borrower.username]+1#float(record.amount)
+
 
 
 	
@@ -1029,9 +1052,9 @@ def Insights(request):
 
 	fig1 = go.Figure()
 	#for i in range(8):
-	print("\n\n")
-	print(x[1])
-	print(y[1])
+	# print("\n\n")
+	# print(x[1])
+	# print(y[1])
 	fig1.add_trace(go.Scatter(x=x[0], y=y[0]))
 	fig1.add_trace(go.Scatter(x=x[1], y=y[1]))
 	fig1.add_trace(go.Scatter(x=x[2], y=y[2]))
@@ -1058,6 +1081,60 @@ def Insights(request):
 	fig2.update_layout(barmode='stack',title_text="Group Expenditures vs Friends")
 	plot_div3 = plot(fig2, output_type='div',include_plotlyjs=False, show_link=False, link_text="")
 
+
+
+	#fig3 = go.Figure()
+	# import plotly.express as px
+	# gapminder = px.data.gapminder()
+	# fig3 = px.area(gapminder, x="day", y="exp_in_group", color="groups", line_group="country")
+
+	# fig3 = go.Figure(data=go.Scatter(
+	# x=[1, 2, 3, 4],
+	# y=[10, 11, 12, 13],
+	# mode='markers',
+	# marker=dict(size=[40, 60, 80, 100],color=[0, 1, 2, 3])))
+
+	#x1=list(times.keys()),
+	x1=[]
+	print(x1)
+	print(times)
+	for (k,v) in times.items():
+		for i in range(len(v)):
+			x1.append(k)
+
+	print("\n")
+	print(x1)
+	print("\n")
+	y1=[list(times[k].keys()) for k in times.keys()]
+	print(y1)
+	flat_list_y = []
+	for sublist in y1:
+		for item in sublist:
+			flat_list_y.append(item)
+	l1=[list(times[k].values()) for k in times.keys()]
+	flat_list_l = []
+	for sublist in l1:
+		for item in sublist:
+			flat_list_l.append(15*item)
+
+	# print(x1)
+	# print(y1)
+
+	fig3 = go.Figure(data=go.Scatter(
+		x=x1,
+		y=flat_list_y,
+		mode='markers',
+		marker=dict(size=flat_list_l,color=[i for i in range(len(flat_list_l))])
+	))
+	
+
+
+	fig3.update_layout(height=700,xaxis_range=[datetime.combine(start_date, datetime.min.time()).date(),datetime.combine(end_date, datetime.min.time()).date()],title_text="Number of Transactions vs Friends vs Time")
+	plot_div4 = plot(fig3, output_type='div',include_plotlyjs=False, show_link=False, link_text="")
+
+
+
+
 	#CHANGE
 
 		# if(y.person2.username==f):
@@ -1070,5 +1147,5 @@ def Insights(request):
 	# }
 	# #return HttpResponse(template.render(context, request))
 	# return HttpResponse('success')
-	return render(request, "insights.html", context={'plot_div1': plot_div, 'plot_div2':plot_div2, 'plot_div3':plot_div3})
+	return render(request, "insights.html", context={'plot_div1': plot_div, 'plot_div2':plot_div2, 'plot_div3':plot_div3, 'plot_div4':plot_div4})
 
