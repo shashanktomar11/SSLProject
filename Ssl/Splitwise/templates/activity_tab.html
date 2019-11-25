@@ -4,16 +4,16 @@
 
 {% block content %}
 
-	{% for f,g,h,i in send_list %}
+	{% for f,g,h,i,j in send_list %}
 		{% if h == "group does not exist xxxxxxwkebjkerjbkjengksdbkejbg" %}
 			<a href="/splitwise/detailed_activity/{{ i.group_transaction_id }}/"><h1>Added {{ g }}</h1></a>
 		{% else %}
 			<a href="/splitwise/detailed_activity/{{ i.group.id }}/{{ i.group_transaction_id }}/"><h1>Added {{ g }} to {{ h }}</h1></a>
 		{% endif %}
-		{% if f >= 0 %}
+		{% if j == 1 %}
 			<p style="color:green;">You get back {{ f }}</p>
 		{% else %}
-			<p style="color:red;">You owe {% widthratio f 1 -1 %}</p>
+			<p style="color:red;">You owe {{ f }}</p>
 		{% endif %}
 	{% endfor %}
 	<a href="{% url 'success' %}">Go Back</a>

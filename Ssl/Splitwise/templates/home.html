@@ -24,7 +24,7 @@
   <br>
   <br>
     <h2>Edit Profile</h2>
-    <form action="/splitwise/success/" method="POST" enctype="multipart/form-data">
+    <form action="/splitwise/success/" method="POST" enctype="multipart/form-data", autocomplete="off">
         {% csrf_token %}
         {{ edit_profile_form }}
         <input type="submit" value="Submit" name="edit_profile">
@@ -33,7 +33,7 @@
   <br>
   <h4>Add Friends</h4>
   <br>
-  <form action="/splitwise/success/" method="POST">
+  <form action="/splitwise/success/" method="POST" autocomplete="off">
         {% csrf_token %}
         {{ friend_form }}
         <input type="submit" value="Submit" name="friend">
@@ -44,13 +44,13 @@
             <th>Name</th>
             <th>Status</th>
         </tr>
-    {% for f in friends %}
+    {% for f,g in friends_list %}
     <tr>
         <td><a href="/splitwise/friend/{{ f.person2.id }}/">{{ f.person2 }}</a></td>
-        {% if f.money_owed >= 0 %}
+        {% if g == 1 %}
         <td><font color="green">{{ f.money_owed }}</font></td>
         {% else %}
-        <td><font color="red">{% widthratio f.money_owed 1 -1 %}</font></td>
+        <td><font color="red">{{ f.money_owed }}</font></td>
         {% endif %}
     </tr>
     {% endfor %}
@@ -60,7 +60,7 @@
     <h2>Groups</h2>
     <br>
     <h4>Add Group</h4>
-    <form action="/splitwise/success/" method="POST">
+    <form action="/splitwise/success/" method="POST" autocomplete="off">
         {% csrf_token %}
         {{ group_form }}
         <input type="submit" value="Submit" name="group">
@@ -71,13 +71,13 @@
         <th>Name</th>
             <th>Status</th>
       </tr>
-    {% for g in groups %}
+    {% for g,b in groups_list %}
     <tr>
         <td><a href="/splitwise/group/{{ g.group.id }}/">{{ g.group }}</a></td>
-        {% if g.money_owed >= 0 %}
+        {% if b == 1 %}
         <td><font color = green>{{ g.money_owed }}</font></td>
         {% else %}
-        <td><font color = red>{% widthratio g.money_owed 1 -1 %}</font></td>
+        <td><font color = red>{{ g.money_owed }}</font></td>
         {% endif %}
         <td><form action="/SSL/" method="POST">
         {% csrf_token %}

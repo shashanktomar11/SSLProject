@@ -12,10 +12,10 @@
         <input type="submit" value="Settle Up" name= "settle_up">
     </form>
 
-    {% if z >= 0 %}
-    	{{ a }} owes you {{ z }} outside group
+    {% if boolean == 1 %}
+    	{{ a }} owes you {{ zxxx }} outside group
     	{% else %}
-    	You owe {{ a }} {% widthratio z 1 -1 %} outside group
+    	You owe {{ a }} {{  zxxx }} outside group
     {% endif %}
 
     <table>
@@ -23,16 +23,17 @@
         <th>Name</th>
         <th>Status</th>
       </tr>
-    {% for g,p in groups_list %}
-    <tr>
-        <td><a href="/splitwise/group/{{ g.id }}/">{{ g.group_name }}</a></td>
-        {% if p >= 0 %}
-        <td><font color = green>{{ p }}</font></td>
-        {% else %}
-        <td><font color = red>{% widthratio p 1 -1 %}</font></td>
-        {% endif %}
+    {% for g,boolean in lst %}
         
-    </tr>
+        <tr>
+            <td><a href="/splitwise/group/{{ g.id }}/">{{ g.0.group_name }}</a></td>
+            {% if boolean == 1 %}
+            <td><font color = green>{{ g.1 }}</font></td>
+            {% else %}
+            <td><font color = red>{{ g.1 }}</font></td>
+            {% endif %}
+        </tr>
+        
     {% endfor %}
     </table>
 {% endblock %}

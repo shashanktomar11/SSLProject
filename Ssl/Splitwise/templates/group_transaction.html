@@ -5,7 +5,7 @@
 {% block content %}
 	<h1>Group Transaction</h1>
 
-	<form action="/splitwise/groups/transaction/" method="POST">
+	<form action="/splitwise/groups/transaction/" method="POST" autocomplete="off">
         {% csrf_token %}
         {{ group_transaction_form }}
         <input type="submit" value="Submit" name="group_transaction">
