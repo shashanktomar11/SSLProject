@@ -1,6 +1,19 @@
 from django.shortcuts import render, redirect, HttpResponse
 
 # Create your views here.
+from ipywidgets import widgets
+from datetime import datetime,date
+import openpyxl
+from openpyxl.styles import Font
+from openpyxl.styles import colors
+import plotly.graph_objects as go
+from django.shortcuts import render
+from plotly.offline import plot
+from plotly.subplots import make_subplots
+import numpy as np
+import pandas as pd
+import scipy as sp
+
 
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse_lazy
@@ -785,3 +798,228 @@ def balances(request):
 		'money_friends':money_friends
 	}
 	return(HttpResponse(template.render(context,request)))
+
+def Insights(request):
+	me = request.user
+	name=me.username
+	s="Transactions_"+name+".xlsx"
+	#me.username
+	#q1 = Transaction.objects.all()
+	# print("g \n")
+	#print(q1)
+	start_date=date(2019, 11, 11)
+	end_date=date(2019, 11, 29)
+	print(me)
+	query_set = Transaction.objects.filter(Q(lender=me)|Q(borrower=me),date__range=(start_date, end_date)) # Poll.objects.get(Q(question__startswith='Who'),Q(pub_date=date(2005, 5, 2)) | Q(pub_date=date(2005, 5, 6)))
+	print(query_set)
+	wb = openpyxl.Workbook()
+	sheet = wb.active
+	sheet.title = "Transaction History"
+	fontObj1 = Font(name='Times New Roman', bold=True,color=colors.RED)
+	sheet['A1'].font = fontObj1
+	sheet['B1'].font = fontObj1
+	sheet['C1'].font = fontObj1
+	sheet['D1'].font = fontObj1
+	sheet['E1'].font = fontObj1
+	sheet['F1'].font = fontObj1
+	sheet.column_dimensions['A'].width = 20
+	sheet.column_dimensions['B'].width = 20
+	sheet.column_dimensions['C'].width = 20
+	sheet.column_dimensions['D'].width = 20
+	sheet.column_dimensions['E'].width = 30
+	sheet.column_dimensions['F'].width = 20
+	sheet.cell(row=1, column=1).value = "Lender"
+	sheet.cell(row=1, column=2).value = "Borrower"
+	#group id if any to be inserted
+	sheet.cell(row=1, column=3).value = "Amount"
+	sheet.cell(row=1, column=4).value = "Type of Expense"
+	sheet.cell(row=1, column=5).value = "Date and Time of Transaction"
+	dict0={'mv': "Movies",
+	'fd': "Food",
+	'tr': "Travel",
+	'ee': "Electronics",
+	'md': "Medical",
+	'sp': "Shopping",
+	'sv': "Services",
+	'ot': "Others"}
+	rowNum=2
+	for record in query_set:
+		if(record.group is None):
+			#colNum=2
+			#for colNum in range(1, 7):
+			sheet.cell(row=rowNum, column=1).value = record.lender.username
+			sheet.cell(row=rowNum, column=2).value = record.borrower.username
+			sheet.cell(row=rowNum, column=3).value = str(record.amount)
+			sheet.cell(row=rowNum, column=4).value = dict0[record.tag]
+			sheet.cell(row=rowNum, column=5).value = str(record.date)
+			#print(record.lender.username+" "+record.borrower.username+" "+str(record.amount)+" "+record.tag+" "+str(record.date))
+			rowNum=rowNum+1
+
+		else:#change to print group name
+			sheet.cell(row=rowNum, column=1).value = record.lender.username
+			sheet.cell(row=rowNum, column=2).value = record.borrower.username
+			sheet.cell(row=rowNum, column=3).value = str(record.amount)
+			sheet.cell(row=rowNum, column=4).value = dict0[record.tag]
+			sheet.cell(row=rowNum, column=5).value = str(record.date)
+			#print(record.lender.username+" "+record.borrower.username+" "+str(record.amount)+" "+record.tag+" "+str(record.date))
+			rowNum=rowNum+1
+
+	wb.save(s)
+		# plot_div = plot([Scatter(x=x_data, y=y_data,
+ #                        mode='lines', name='test',
+ #                        opacity=0.8, marker_color='green')],
+ #               output_type='div')
+	# fig = make_subplots(rows=2, cols=2,subplot_titles=("Plot 1", "Plot 2", "Plot 3", "Plot 4"), )
+	# fig.add_trace(go.Figure(data=go.Bar(y=[2, 3, 1])))
+	# 	#fig.write_html('first_figure.html', auto_open=True)
+	# 	#plot_div = plot(fig, output_type='div')
+	# labels = ['Oxygen','Hydrogen','Carbon_Dioxide','Nitrogen']
+	# values = [4500, 2500, 1053, 500]
+	# fig.add_trace(go.Figure(data=[go.Pie(labels=labels, values=values)]))
+	# fig.add_trace(go.Figure(data=[go.Pie(labels=labels, values=values)]))
+	# fig.add_trace(go.Figure(data=[go.Pie(labels=labels, values=values)]))
+
+	v=np.zeros((5,9))
+	dict2={'mv': 1,
+	'fd': 2,
+	'tr': 3,
+	'ee': 4,
+	'md': 5,
+	'sp': 6,
+	'sv': 7,
+	'ot': 8}
+	inverse_dict = {v: k for k, v in dict2.items()}
+	dictionary= {"mv": "Movies",'fd': "Food",'tr': "Travel",'ee': "Electronics",'md': "Medical",'sp': "Shopping",'sv': "Services",'ot': "Others"}
+	l3=[]
+	dict21={}
+	dates=[]
+	#p=np.zeros((8,1))
+	columns = [{} for i in range(8)]
+	for record in query_set:
+		if(record.borrower.username==name):
+			dates.append(record.date)
+	#print(len(dates))
+	#np.resize(p,(8,len(dates)))
+	#a=p.tolist()
+	#print(dates) 
+	for record in query_set:
+		if(record.borrower.username==name):
+			columns[dict2[record.tag]-1][record.date]=0.0
+
+	for record in query_set:
+		if(record.borrower.username==name):
+			columns[dict2[record.tag]-1][record.date]=columns[dict2[record.tag]-1][record.date]+float(record.amount)
+
+	#print(columns)
+	x = [list(columns[i].keys()) for i in range(8)]
+	y = [list(columns[i].values()) for i in range(8)]
+
+	for record in query_set:
+		if(record.borrower.username==name):
+			dict21[record.tag]=dict2[record.tag]+float(record.amount)
+	for (key, value) in dict21.items():
+			dict21[key]=dict21[key]-dict2[key]
+	newdict2={}
+	for (key, value) in dict21.items():
+		if value>0:
+			newdict2[key] = value
+	#print(newdict2)
+	l2k=list(newdict2.keys())
+	l2=[dictionary[i] for i in l2k]
+	v2=list(newdict2.values())
+
+	for record in query_set:
+		if(record.borrower.username==name and record.lender.username!=name):
+			l3.append(record.lender.username)
+		elif(record.lender.username==name and record.borrower.username!=name):
+			l3.append(record.borrower.username)
+	dict3 = {k:0.0 for k in l3}
+	# print("\n\ng")
+	# print(l3)
+	# print(dict3)
+	for record in query_set:
+		if(record.borrower.username==name and record.lender.username!=name):
+			dict3[record.lender.username]=dict3[record.lender.username]+float(record.amount)
+		elif(record.lender.username==name and record.borrower.username!=name):
+			dict3[record.borrower.username]=dict3[record.borrower.username]+float(record.amount)
+
+	fig = make_subplots(
+	    rows=2, cols=2,
+	    specs=[[{"type": "pie"}, {"type": "pie"}],
+               [{"type": "bar"}, {"type": "bar"}]], 
+	           subplot_titles=("Category-wise Expenditure", "Debts and Arrears with Friends", "Debts and Arrears")
+	)
+	# x = [datetime(year=2013, month=10, day=4),
+	# datetime(year=2013, month=11, day=5),
+	# datetime(year=2013, month=12, day=6)]
+
+	# f = go.Figure(data=[go.Scatter(x=x, y=[1, 3, 6])])
+	# # Use datetime objects to set xaxis range
+	# f.update_layout(xaxis_range=[datetime(2013, 10, 17), datetime(2013, 11, 20)])
+
+	# f2=go.FigureWidget(f)
+	# fig.add_trace(f2)
+
+	#labels = ["Movies", "Food", "Travel", "Electronics", "Medical","Shopping","Services","Others"]
+	labels=l2
+	values = v2#[v[2][1], v[2][2], v[2][3], v[2][4], v[2][5], v[2][6], v[2][7], v[2][8]]
+	fig.add_trace(go.Pie(labels=labels,values=values),
+	              row=1, col=1)
+
+	labels = list(dict3.keys())
+	values = list(dict3.values())
+	fig.add_trace(go.Pie(labels=labels,values=values),
+	              row=1, col=2)
+
+	fig.add_trace(go.Bar(y=[2, 3, 1]),
+	              row=2, col=1)
+
+	fig.add_trace(go.Bar(y=[2, 3, 1]),
+	              row=2, col=2)
+
+	# fig.add_trace(go.Scatter3d(x=[2, 3, 1], y=[0, 0, 0], z=[0.5, 1, 2], mode="lines"),
+	#               row=2, col=2)
+
+	fig.update_layout(height=700, title_text="Insights")
+	plot_div = plot(fig, output_type='div',include_plotlyjs=False, show_link=False, link_text="")
+
+	fig1 = go.Figure()
+	#for i in range(8):
+	print("\n\n")
+	print(x[1])
+	print(y[1])
+	fig1.add_trace(go.Scatter(x=x[0], y=y[0]))
+	fig1.add_trace(go.Scatter(x=x[1], y=y[1]))
+	fig1.add_trace(go.Scatter(x=x[2], y=y[2]))
+	fig1.add_trace(go.Scatter(x=x[3], y=y[3]))
+	fig1.add_trace(go.Scatter(x=x[4], y=y[4]))
+	fig1.add_trace(go.Scatter(x=x[5], y=y[5]))
+	fig1.add_trace(go.Scatter(x=x[6], y=y[6]))
+	fig1.add_trace(go.Scatter(x=x[7], y=y[7]))
+	#fig1.add_trace(go.Scatter(x=x[5], y=y[5]))
+	#fig1 = go.Figure(data=[go.Scatter(x=x[1], y=y[1])])
+	#fig = go.Figure(data=[go.Scatter(x=x, y=[1, 3, 6])])
+# Use datetime objects to set xaxis range datetime.combine(date.today(), datetime.min.time())
+	fig1.update_layout(xaxis_range=[datetime.combine(start_date, datetime.min.time()),datetime.combine(end_date, datetime.min.time())],title_text="Expenditure vs Time")
+	plot_div2 = plot(fig1, output_type='div',include_plotlyjs=False, show_link=False, link_text="")
+	animals=['giraffes', 'orangutans', 'monkeys']
+	fig2 = go.Figure(data=[go.Bar(name='SF Zoo', x=animals, y=[20, 14, 23]),go.Bar(name='LA Zoo', x=animals, y=[12, 18, 29])
+	])
+# Change the bar mode
+	fig2.update_layout(barmode='stack')
+	plot_div3 = plot(fig2, output_type='div',include_plotlyjs=False, show_link=False, link_text="")
+
+	#CHANGE
+
+		# if(y.person2.username==f):
+		# 	z = y.money_owed
+		# 	a = str(y.person2)
+	# template=loader.get_template('home.html')
+	# x=''
+	# context = {
+	# 	'x' : x
+	# }
+	# #return HttpResponse(template.render(context, request))
+	# return HttpResponse('success')
+	return render(request, "insights.html", context={'plot_div1': plot_div, 'plot_div2':plot_div2, 'plot_div3':plot_div3})
+

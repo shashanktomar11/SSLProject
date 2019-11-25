@@ -1,0 +1,19 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    {% load static %}
+    <link rel="shortcut icon" type="image/png" href="{% static 'images/favicon.ico' %}"/>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <title>Insights</title>
+ 
+</head>
+<body>
+  {% autoescape off %}
+  {{ plot_div1 }}
+  {{ plot_div2 }}
+  {{ plot_div3 }}
+  {% endautoescape %}
+</body>
+</html>

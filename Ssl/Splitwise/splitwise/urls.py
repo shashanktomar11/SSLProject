@@ -4,6 +4,9 @@ from . import views
 
 from django.conf import settings 
 from django.conf.urls.static import static
+from django.views.generic import RedirectView
+from django.contrib.staticfiles.storage import staticfiles_storage
+
 
 
 urlpatterns = [
@@ -15,6 +18,8 @@ urlpatterns = [
     path('transaction/',views.transaction,name='transaction'),
     path('transaction/form/',views.transaction_form, name='transaction_form'),
     path('groups/transaction/',views.group_transaction, name='group_transaction'),
+    path('insights/', views.Insights, name='Insights'),
+    path('favicon.ico', RedirectView.as_view(url=staticfiles_storage.url('images/favicon.ico'))),
 
     #path('login/', views.login, name='login'),
     path('friend/<str:f>/', views.friend, name='friend'),
